@@ -23,7 +23,11 @@ from .tickets import (
     calculate_priority,
 )
 
-DEFAULT_TICKETS_PATH = Path("data/tickets.json")
+# Anchor default storage to the project root, not the caller's working
+# directory. This keeps the CLI and browser dashboard pointed at the same
+# tickets.json file even when launched from different directories.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_TICKETS_PATH = PROJECT_ROOT / "data" / "tickets.json"
 _REQUIRED_FIELDS = {
     "id",
     "title",
