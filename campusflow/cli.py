@@ -176,6 +176,10 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 return
             elif choice == "8":
                 show_priority_queue(tickets)
+                # Keep the queue visible in interactive terminals until the
+                # user is ready to return to the menu.
+                if sys.stdin.isatty():
+                    input("Press Enter to return to the menu...")
             elif choice == "9":
                 show_ticket_report(tickets)
                 # Keep the report visible in interactive terminals, just like
