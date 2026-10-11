@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from os import PathLike
+import sys
 
 from .persistence import (
     DEFAULT_TICKETS_PATH,
@@ -136,6 +137,10 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 prompt_for_ticket(tickets, tickets_path)
             elif choice == "2":
                 show_tickets(tickets)
+                # Keep the list visible in interactive terminals instead of
+                # immediately printing the menu over the result.
+                if sys.stdin.isatty():
+                    input("Press Enter to return to the menu...")
             elif choice == "3":
                 show_ticket_by_id(tickets, input("Ticket ID: "))
             elif choice == "4":
