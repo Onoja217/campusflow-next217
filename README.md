@@ -76,7 +76,7 @@ The dashboard supports creating and searching tickets, filtering the list, assig
 
 - **The CLI does not start:** confirm Python 3.10 or newer with `python3 --version`, run the command from the repository root, and check that the package folder is named `campusflow`.
 - **The browser page does not load:** start the server with `python3 -m campusflow.web`, keep that terminal running, and open `http://localhost:3000`. If port 3000 is already occupied, stop the other local process and retry.
-- **Tickets seem to disappear after restarting:** run the app from the repository root so the relative `data/tickets.json` path resolves consistently. Check that the file exists and contains valid JSON; back it up before making manual changes.
+- **Tickets seem to disappear after restarting or between the CLI and dashboard:** the default data file is anchored to the project root, so both interfaces use the same `data/tickets.json` regardless of the terminal's current directory. Check that this file exists and contains valid JSON; back it up before making manual changes.
 - **A persistence error appears:** do not delete or overwrite the data file as a first response. Make a backup, inspect the error, and validate the JSON. A malformed file should be repaired deliberately rather than silently replaced.
 - **The test suite cannot find tests:** run `python3 -m unittest discover -s tests -v` from the repository root and confirm the `tests/` directory is present.
 - **A browser action fails:** inspect the browser's displayed error and the server terminal output. Retain the reproduction steps and input values (excluding sensitive data) when reporting the issue.
@@ -103,7 +103,7 @@ Priority rules are evaluated in this order:
 
 ## Data storage and safe reset
 
-The default data file is `data/tickets.json`. Run CampusFlow from the repository root so this relative path resolves consistently. The data directory and file are created when ticket data is first saved. Both interfaces use this same file.
+The default data file is `<project-root>/data/tickets.json`. Its path is anchored to the project root, so the CLI and browser dashboard share the same file even if launched from different working directories. The data directory and file are created when ticket data is first saved. Both interfaces use this same file.
 
 - A missing data file is treated as an empty ticket collection.
 - Valid records, including assignment and status, are loaded on startup.
