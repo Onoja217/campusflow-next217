@@ -178,6 +178,10 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 show_priority_queue(tickets)
             elif choice == "9":
                 show_ticket_report(tickets)
+                # Keep the report visible in interactive terminals, just like
+                # the ticket list, until the user is ready to return.
+                if sys.stdin.isatty():
+                    input("Press Enter to return to the menu...")
             else:
                 print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, or 9.")
     except (EOFError, KeyboardInterrupt):
