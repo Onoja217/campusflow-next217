@@ -7,6 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from campusflow.persistence import (
+    DEFAULT_TICKETS_PATH,
+    PROJECT_ROOT,
     TicketPersistenceError,
     load_tickets,
     save_tickets,
@@ -31,6 +33,10 @@ class TicketPersistenceTests(unittest.TestCase):
             urgency="high",
             affected_users=10,
         )
+
+    def test_default_storage_path_is_anchored_to_project_root(self):
+        self.assertEqual(DEFAULT_TICKETS_PATH, PROJECT_ROOT / "data" / "tickets.json")
+        self.assertTrue(DEFAULT_TICKETS_PATH.is_absolute())
 
     def test_missing_file_loads_as_empty_collection(self):
         self.assertEqual(load_tickets(self.path), [])
