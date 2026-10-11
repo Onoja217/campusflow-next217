@@ -161,5 +161,19 @@ class InteractiveCliTests(unittest.TestCase):
         self.assertIn("CampusFlow closed.", output.getvalue())
 
 
+    def test_list_waits_for_enter_in_interactive_terminal(self):
+        output = StringIO()
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("campusflow.cli.sys.stdin") as stdin:
+                stdin.isatty.return_value = True
+                with patch("builtins.input", side_effect=["2", "", "7"]):
+                    with redirect_stdout(output):
+                        main(Path(directory) / "tickets.json")
+
+        self.assertIn("No tickets found.", output.getvalue())
+        self.assertIn("Press Enter to return to the menu...", output.getvalue())
+        self.assertIn("CampusFlow closed.", output.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
