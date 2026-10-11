@@ -127,7 +127,7 @@ The tests use Python's standard-library `unittest` framework. They cover ticket 
 
 ## Team and contributions
 
-The summaries below are based on the merged pull-request history. **Both fellows must review and confirm the display names, roles, and summaries before this section is treated as team-confirmed for assessment.** No confirmation is implied by this draft.
+The display names, roles, and contribution summaries below have been explicitly confirmed by both fellows in [Issue #26](https://github.com/Onoja217/campusflow217/issues/26) on 2026-10-11. The contribution summaries are grounded in the merged pull-request history.
 
 | Fellow | GitHub handle | Proposed role | Contribution summary and evidence |
 | --- | --- | --- | --- |
