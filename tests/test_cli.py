@@ -166,12 +166,12 @@ class InteractiveCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
-                with patch("builtins.input", side_effect=["2", "", "7"]):
+                with patch("builtins.input", side_effect=["2", "", "7"]) as mocked_input:
                     with redirect_stdout(output):
                         main(Path(directory) / "tickets.json")
 
         self.assertIn("No tickets found.", output.getvalue())
-        self.assertIn("Press Enter to return to the menu...", output.getvalue())
+        mocked_input.assert_any_call("Press Enter to return to the menu...")
         self.assertIn("CampusFlow closed.", output.getvalue())
 
 
