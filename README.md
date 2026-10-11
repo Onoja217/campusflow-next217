@@ -132,7 +132,7 @@ The summaries below are based on the merged pull-request history. **Both fellows
 | Fellow | GitHub handle | Proposed role | Contribution summary and evidence |
 | --- | --- | --- | --- |
 | Jireh Ochygole Samuel | [@Jireh7521](https://github.com/Jireh7521) | Feature contributor | Implemented safe status transitions, the unresolved-ticket priority queue, and workload reports; related merged PRs: [#11](https://github.com/Onoja217/campusflow217/pull/11), [#15](https://github.com/Onoja217/campusflow217/pull/15), [#21](https://github.com/Onoja217/campusflow217/pull/21). |
-| Display name to be confirmed by the fellow | [@Onoja217](https://github.com/Onoja217) | Feature contributor / repository owner (confirm with fellow) | Contributed validated ticket creation and priority calculation, ticket listing/details, persistence, and the browser dashboard; related merged PRs: [#8](https://github.com/Onoja217/campusflow217/pull/8), [#9](https://github.com/Onoja217/campusflow217/pull/9), [#14](https://github.com/Onoja217/campusflow217/pull/14), [#19](https://github.com/Onoja217/campusflow217/pull/19). |
+| Onoja Monday Ojonugba | [@Onoja217](https://github.com/Onoja217) | Feature contributor / repository owner | Contributed validated ticket creation and priority calculation, ticket listing/details, persistence, and the browser dashboard; related merged PRs: [#8](https://github.com/Onoja217/campusflow217/pull/8), [#9](https://github.com/Onoja217/campusflow217/pull/9), [#14](https://github.com/Onoja217/campusflow217/pull/14), [#19](https://github.com/Onoja217/campusflow217/pull/19). |
 
 ### Review evidence
 
