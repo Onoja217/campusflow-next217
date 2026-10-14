@@ -143,7 +143,7 @@ class InteractiveCliTests(unittest.TestCase):
     def test_invalid_menu_option_keeps_cli_running(self):
         output = self.run_cli(["x", "7"])
 
-        self.assertIn("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.", output)
+        self.assertIn("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, or 12.", output)
         self.assertIn("CampusFlow closed.", output)
 
     def test_search_menu_combines_title_and_filters(self):
@@ -161,6 +161,42 @@ class InteractiveCliTests(unittest.TestCase):
     def test_search_menu_reports_no_matches(self):
         output = self.run_cli(["10", "not found", "", "", "", "7"])
         self.assertIn("No matching tickets found.", output)
+
+    def test_cli_can_add_and_view_follow_up_notes(self):
+        output = self.run_cli([
+            "1", "Wi-Fi unavailable", "Network", "high", "10",
+            "11", "T001", "Router replaced; connection restored",
+            "12", "T001", "7",
+        ])
+
+        self.assertIn("Added note N001 to ticket T001.", output)
+        self.assertIn("N001: Router replaced; connection restored", output)
+
+    def test_follow_up_notes_persist_across_cli_restarts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tickets.json"
+            first = self.run_cli([
+                "1", "Wi-Fi unavailable", "Network", "high", "10",
+                "11", "T001", "Technician scheduled",
+                "7",
+            ], path)
+            second = self.run_cli(["12", "T001", "7"], path)
+
+        self.assertIn("Added note N001 to ticket T001.", first)
+        self.assertIn("N001: Technician scheduled", second)
+
+    def test_cli_rejects_note_on_resolved_ticket(self):
+        output = self.run_cli([
+            "1", "Wi-Fi unavailable", "Network", "high", "10",
+            "4", "T001", "Ada",
+            "5", "T001", "in_progress",
+            "5", "T001", "resolved",
+            "11", "T001", "Should not be accepted",
+            "7",
+        ])
+
+        self.assertIn("Notes can only be added to open or in-progress tickets.", output)
+        self.assertNotIn("Added note N001", output)
 
     def test_eof_exits_cleanly(self):
         output = StringIO()
