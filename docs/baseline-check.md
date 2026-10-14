@@ -1,10 +1,10 @@
 # CampusFlow baseline audit — Issue #47
 
 **Audit date:** 2026-10-14  
-**Repository:** [Onoja217/campusflow217](https://github.com/Onoja217/campusflow217)  
+**Repository:** [Onoja217/campusflow-next217](https://github.com/Onoja217/campusflow-next217)  
 **Baseline branch:** `main`  
-**Baseline commit:** [`755a7c07e41b8f756d0855b935a2ca92bc797005`](https://github.com/Onoja217/campusflow217/commit/755a7c07e41b8f756d0855b935a2ca92bc797005)  
-**Scope:** Observe current behavior before implementing [Issue #47](https://github.com/Onoja217/campusflow217/issues/47). No application code was changed as part of this audit.
+**Baseline commit:** [`755a7c07e41b8f756d0855b935a2ca92bc797005`](https://github.com/Onoja217/campusflow-next217/commit/755a7c07e41b8f756d0855b935a2ca92bc797005)  
+**Scope:** Observe current behavior before implementing [Issue #47](https://github.com/Onoja217/campusflow-next217/issues/47). No application code was changed as part of this audit.
 
 ## Test execution evidence
 
@@ -14,15 +14,15 @@ The repository's GitHub Actions workflow `.github/workflows/tests.yml` checks ou
 python -m unittest discover -s tests -v
 ```
 
-The latest observed `main` run for the baseline commit completed successfully:
+The baseline audit recorded a successful GitHub Actions run for the baseline commit:
 
-- Workflow run: [Python tests #106](https://github.com/Onoja217/campusflow217/actions/runs/38140531687)
-- Job: `unittest` — completed, conclusion `success`
-- Test command result: **86 tests ran in 5.733 seconds**
-- The log lists 86 test cases ending in `ok`; no test failures were reported.
-- Runtime: GitHub-hosted Ubuntu 24.04, Python 3.12.15.
+- Workflow run: [Python tests #106](https://github.com/Onoja217/campusflow-next217/actions/runs/38140531687)
+- Job: `unittest` — reported as completed successfully in the audit evidence.
+- Test command result: **86 tests ran in 5.733 seconds**.
+- The recorded log listed 86 test cases ending in `ok`; no test failures were reported.
+- Runtime recorded in the audit: GitHub-hosted Ubuntu 24.04, Python 3.12.15.
 
-A separate local clone/test attempt in the current assistant execution environment could not resolve `github.com`. Therefore, this report uses the actual successful GitHub Actions run as execution evidence; it does **not** claim that the tests were rerun locally on 2026-10-14.
+A separate local clone/test attempt in the assistant execution environment could not resolve `github.com`. Therefore, this report distinguishes the recorded remote CI result from local execution; it does **not** claim that the tests were rerun locally on 2026-10-14. The run details above are the evidence captured during the audit, not a new rerun performed by this documentation update.
 
 ## Existing safeguards observed
 
@@ -58,22 +58,33 @@ The CLI persistence smoke tests also cover persistence across separate CLI runs 
 
 ## Issue #47 gaps to address
 
-These are the target behaviors for the next implementation, not claims that the current code already supports them:
+These are target behaviors for implementation, not claims that the current code already supports them:
 
-1. **Structured follow-up notes:** the current ticket schema and listed persistence tests do not show a notes field or note lifecycle. Agree on a stable note record/API before implementation. Notes must be sequentially identified, added only to open/in-progress tickets, and retained when a ticket is resolved and reopened.
-2. **Rejected operations must be side-effect-free:** add focused tests proving invalid note/status/assignment operations do not mutate ticket state or consume note IDs.
-3. **Load atomicity in memory:** existing tests establish several file-validation safeguards, but add a test that attempts to load a malformed or duplicate-ID document into a populated in-memory store and proves the pre-existing in-memory records remain intact after rejection.
-4. **End-to-end ID continuity:** extend coverage to note IDs across save/reload and a fresh process, as appropriate for the agreed note API.
-5. **Cross-feature contract:** coordinate the notes API and error conventions with Issue #48 before the CLI/search work begins.
+1. **Structured follow-up notes:** The current ticket schema and listed persistence tests do not show a notes field or note lifecycle. Agree on a stable note record and API before implementation. Notes should have sequential IDs, be added only to open or in-progress tickets, and remain attached when a ticket is resolved and reopened.
+2. **Rejected operations must be side-effect-free:** Add focused tests proving rejected note additions do not change ticket state or consume a note ID. For example, if the first successful note receives `N001`, a rejected attempt must not use an ID; the next successful note should receive `N002`. Apply the same no-mutation expectation to rejected status and assignment operations.
+3. **Atomic in-memory loading:** Existing tests establish several file-validation safeguards, but add a regression test that starts with a populated in-memory store, attempts to load a malformed or duplicate-ID document, and verifies that the original records remain unchanged after the load is rejected. Validate the complete incoming document before replacing the current in-memory collection.
+4. **End-to-end ID continuity:** Extend coverage to note IDs across save/reload and a fresh process, where appropriate for the agreed note API. Confirm the next successful note gets the next ID rather than reusing an existing one.
+5. **Cross-feature contract with Issue #48:** Before CLI work is implemented, agree with the Issue #48 engineer on the note data shape, the functions for adding and retrieving notes, how IDs are generated, and the error/return conventions. The CLI should call the shared API rather than duplicate validation. Record the final agreement in the relevant project documentation.
+
+### Suggested contract to agree on
+
+This is a proposal for the two engineers to confirm, not a claim that the API already exists:
+
+- A note contains a stable note ID, note text, and a creation timestamp if the project already uses timestamps consistently.
+- The ticket stores its notes in creation order, and notes are saved and loaded as part of the ticket's JSON representation.
+- One shared service function validates and adds a note; a separate read function returns a ticket's notes without changing them.
+- A note can be added only while the ticket status is `open` or `in_progress`. Resolving or reopening a ticket must not delete its existing notes.
+- A rejected operation returns the project's agreed error result or raises its agreed exception, leaves ticket data unchanged, and does not advance the note-ID counter.
+- Loading validates the full document before replacing the active in-memory records. A failed load leaves the old records and ID counters intact.
 
 ## Baseline acceptance and next actions
 
-- [x] Confirm baseline commit and inspect relevant ticket, persistence, and test files.
-- [x] Obtain a successful full-suite run from GitHub Actions: 86 tests passed by reported run outcome.
+- [x] Confirm the baseline commit and inspect relevant ticket, persistence, and test files.
+- [x] Record the successful full-suite result captured in the baseline audit: 86 tests passed in the reported GitHub Actions run.
 - [x] Record existing safeguards and gaps before implementation.
 - [ ] Agree the note schema/API, ID allocation behavior, and error conventions with the Issue #48 engineer.
 - [ ] Implement Issue #47 on its own focused branch, adding regression tests before changing behavior.
 - [ ] Run the full suite on the PR and require peer review before merging.
-- [ ] After merge, rerun the suite on integrated `main` and record the resulting commit/run.
+- [ ] After merge, rerun the suite on integrated `main` and record the resulting commit and CI run.
 
-**Baseline decision:** the existing test suite is green at the recorded baseline commit. Proceed with Issue #47 as an additive, test-led change; do not rewrite the application or weaken existing persistence guarantees.
+**Baseline decision:** The existing test suite was recorded as green at the baseline commit. Proceed with Issue #47 as an additive, test-led change; do not rewrite the application or weaken existing persistence guarantees.
