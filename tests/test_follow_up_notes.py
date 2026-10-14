@@ -7,6 +7,7 @@ from pathlib import Path
 
 from campusflow.persistence import TicketPersistenceError, load_tickets, save_tickets
 from campusflow.tickets import (
+    FollowUpNote,
     TicketValidationError,
     add_follow_up_note,
     change_ticket_status,
@@ -101,10 +102,10 @@ class FollowUpNoteTests(unittest.TestCase):
             urgency="low", affected_users=1,
         )
         first_record = replace(self.tickets[0], notes=(
-            add_follow_up_note(self.tickets, self.ticket.id, "Note one"),
+            FollowUpNote("N001", "Note one"),
         )).to_dict()
         second_record = replace(second, notes=(
-            type(self.tickets[0].notes[0])("N001", "Duplicate"),
+            FollowUpNote("N001", "Duplicate"),
         )).to_dict()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tickets.json"
