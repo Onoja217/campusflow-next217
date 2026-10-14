@@ -16,9 +16,11 @@ class InteractiveCliTests(unittest.TestCase):
             self.addCleanup(temporary_directory.cleanup)
             tickets_path = Path(temporary_directory.name) / "tickets.json"
         output = StringIO()
-        with patch("builtins.input", side_effect=inputs):
-            with redirect_stdout(output):
-                main(tickets_path)
+        with patch("campusflow.cli.sys.stdin") as stdin:
+            stdin.isatty.return_value = False
+            with patch("builtins.input", side_effect=inputs):
+                with redirect_stdout(output):
+                    main(tickets_path)
         return output.getvalue()
 
     def test_create_list_and_view_ticket_in_one_session(self):
@@ -156,7 +158,11 @@ class InteractiveCliTests(unittest.TestCase):
 
         self.assertIn("10. Search and filter tickets", output)
         self.assertIn("Wi-Fi not working", output)
-        self.assertNotIn("Office printer jam", output)
+        self.assertIn("No matching tickets found.", output)
+        self.assertNotIn(
+            "T002 | Office printer jam",
+            output,
+        )
 
     def test_search_menu_reports_no_matches(self):
         output = self.run_cli(["10", "not found", "", "", "", "7"])

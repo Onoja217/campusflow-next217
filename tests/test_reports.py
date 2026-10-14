@@ -92,9 +92,11 @@ class TicketReportTests(unittest.TestCase):
         output = StringIO()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tickets.json"
-            with patch("builtins.input", side_effect=["9", "7"]):
-                with redirect_stdout(output):
-                    main(path)
+            with patch("campusflow.cli.sys.stdin") as stdin:
+                stdin.isatty.return_value = False
+                with patch("builtins.input", side_effect=["9", "7"]):
+                    with redirect_stdout(output):
+                        main(path)
 
         rendered = output.getvalue()
         self.assertIn("9. Show ticket report", rendered)

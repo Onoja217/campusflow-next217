@@ -15,6 +15,15 @@ from .tickets import (
 TicketLike: TypeAlias = Ticket | Mapping[str, object]
 
 
+def _normalize_title(value: str) -> str:
+    """Normalize a title or query for case-insensitive, punctuation-tolerant matching."""
+    return "".join(
+        character
+        for character in value.casefold()
+        if character.isalnum()
+    )
+
+
 def _value(ticket: TicketLike, field: str) -> object:
     """Read a field from either a Ticket or a mapping-shaped record."""
     if isinstance(ticket, Ticket):
@@ -32,12 +41,14 @@ def search_tickets(
 ) -> list[TicketLike]:
     """Search by title substring and combine optional filters with AND.
 
-    Title matching is case-insensitive. A blank title query and omitted filters
-    do not restrict results. The source collection is never changed.
+    Title matching is case-insensitive and ignores punctuation differences.
+    A blank title query and omitted filters do not restrict results.
+    The source collection is never changed.
     """
     if not isinstance(title, str):
         raise TicketValidationError("Title search must be text.")
-    title_query = title.strip().casefold()
+
+    title_query = _normalize_title(title.strip())
 
     clean_category = None
     if category is not None and str(category).strip():
@@ -49,10 +60,13 @@ def search_tickets(
             raise TicketValidationError(
                 f"Status must be one of: {', '.join(TICKET_STATUSES)}."
             )
+
         clean_status = status.strip().casefold()
+
         if clean_status not in TICKET_STATUSES:
             raise TicketValidationError(
-                f"Unsupported status {status!r}. Choose one of: {', '.join(TICKET_STATUSES)}."
+                f"Unsupported status {status!r}. "
+                f"Choose one of: {', '.join(TICKET_STATUSES)}."
             )
 
     clean_priority = None
@@ -61,25 +75,44 @@ def search_tickets(
             raise TicketValidationError(
                 f"Priority must be one of: {', '.join(PRIORITIES)}."
             )
+
         clean_priority = priority.strip().casefold()
+
         if clean_priority not in PRIORITIES:
             raise TicketValidationError(
-                f"Unsupported priority {priority!r}. Choose one of: {', '.join(PRIORITIES)}."
+                f"Unsupported priority {priority!r}. "
+                f"Choose one of: {', '.join(PRIORITIES)}."
             )
 
     results = []
+
     for ticket in tickets:
         ticket_title = _value(ticket, "title")
+
         if title_query and (
             not isinstance(ticket_title, str)
-            or title_query not in ticket_title.casefold()
+            or title_query not in _normalize_title(ticket_title)
         ):
             continue
-        if clean_category is not None and _value(ticket, "category") != clean_category:
+
+        if (
+            clean_category is not None
+            and _value(ticket, "category") != clean_category
+        ):
             continue
-        if clean_status is not None and _value(ticket, "status") != clean_status:
+
+        if (
+            clean_status is not None
+            and _value(ticket, "status") != clean_status
+        ):
             continue
-        if clean_priority is not None and _value(ticket, "priority") != clean_priority:
+
+        if (
+            clean_priority is not None
+            and _value(ticket, "priority") != clean_priority
+        ):
             continue
+
         results.append(ticket)
+
     return results

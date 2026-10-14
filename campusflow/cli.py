@@ -28,7 +28,9 @@ from .tickets import (
 
 
 def _save_or_rollback(
-    tickets: list[Ticket], previous: list[Ticket], path: str | PathLike[str]
+    tickets: list[Ticket],
+    previous: list[Ticket],
+    path: str | PathLike[str],
 ) -> bool:
     """Persist a mutation or restore the in-memory collection on failure."""
     try:
@@ -41,10 +43,12 @@ def _save_or_rollback(
 
 
 def prompt_for_ticket(
-    tickets: list[Ticket], tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH
+    tickets: list[Ticket],
+    tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH,
 ) -> Ticket | None:
     """Prompt for a ticket and report success only after it has been saved."""
     previous = list(tickets)
+
     try:
         title = input("Ticket title: ")
         category = input("Category (Network/Hardware/Software/Other): ")
@@ -92,24 +96,33 @@ def show_ticket_report(tickets: list[Ticket]) -> None:
     report = build_ticket_report(tickets)
     print(f"Total tickets: {report['total']}")
     print(f"Resolution percentage: {report['resolution_percentage']:.1f}%")
+
     print("\nBy category:")
     for category, count in report["by_category"].items():
         print(f"  {category}: {count}")
+
     print("\nBy status:")
     for status, count in report["by_status"].items():
         print(f"  {status}: {count}")
+
     print("\nBy priority:")
     for priority, count in report["by_priority"].items():
         print(f"  {priority}: {count}")
 
 
 def show_ticket_search(tickets: list[Ticket]) -> None:
-    """Prompt for optional search terms and filters, then print matching tickets."""
+    """Prompt for optional search terms and filters, then print matches."""
     try:
         title = input("Title contains (leave blank for any): ")
-        category = input("Category (Network/Hardware/Software/Other, blank for any): ")
-        status = input("Status (open/in_progress/resolved, blank for any): ")
-        priority = input("Priority (low/medium/high/critical, blank for any): ")
+        category = input(
+            "Category (Network/Hardware/Software/Other, blank for any): "
+        )
+        status = input(
+            "Status (open/in_progress/resolved, blank for any): "
+        )
+        priority = input(
+            "Priority (low/medium/high/critical, blank for any): "
+        )
         matches = search_tickets(
             tickets,
             title=title,
@@ -124,14 +137,16 @@ def show_ticket_search(tickets: list[Ticket]) -> None:
     if not matches:
         print("No matching tickets found.")
         return
+
     print(format_ticket_list(matches))
 
 
 def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
-    """Print one ticket's details or a friendly not-found message."""
+    """Print ticket details or a friendly not-found message."""
     if not tickets:
         print("No tickets found.")
         return
+
     ticket = get_ticket_by_id(tickets, ticket_id)
     if ticket is None:
         requested = ticket_id.strip() if isinstance(ticket_id, str) else ""
@@ -140,7 +155,14 @@ def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
         else:
             print("Please enter a ticket ID.")
         return
+
     print(format_ticket_details(ticket))
+
+
+def _pause_if_interactive() -> None:
+    """Pause after a result only when running in an interactive terminal."""
+    if sys.stdin.isatty():
+        input("Press Enter to return to the menu...")
 
 
 def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
@@ -153,23 +175,34 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
         return
 
     print("CampusFlow ticket tracker")
+
     try:
         while True:
             print(
-                "\n1. Create ticket\n2. List all tickets\n3. View ticket by ID"
-                "\n4. Assign ticket\n5. Change ticket status\n6. Reopen resolved ticket"
-                "\n7. Exit\n8. Show unresolved priority queue"
-                "\n9. Show ticket report\n10. Search and filter tickets"
+                "\n1. Create ticket\n"
+                "2. List all tickets\n"
+                "3. View ticket by ID\n"
+                "4. Assign ticket\n"
+                "5. Change ticket status\n"
+                "6. Reopen resolved ticket\n"
+                "7. Exit\n"
+                "8. Show unresolved priority queue\n"
+                "9. Show ticket report\n"
+                "10. Search and filter tickets"
             )
+
             choice = input("Choose an option: ").strip()
+
             if choice == "1":
                 prompt_for_ticket(tickets, tickets_path)
+
             elif choice == "2":
                 show_tickets(tickets)
-                if sys.stdin.isatty():
-                    input("Press Enter to return to the menu...")
+                _pause_if_interactive()
+
             elif choice == "3":
                 show_ticket_by_id(tickets, input("Ticket ID: "))
+
             elif choice == "4":
                 previous = list(tickets)
                 try:
@@ -180,6 +213,7 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                         print(f"Assigned {ticket.id} to {ticket.assigned_to}.")
                 except TicketValidationError as error:
                     print(f"Error: {error}")
+
             elif choice == "5":
                 previous = list(tickets)
                 try:
@@ -190,29 +224,37 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                         print(f"{ticket.id} status changed to {ticket.status}.")
                 except TicketValidationError as error:
                     print(f"Error: {error}")
+
             elif choice == "6":
                 previous = list(tickets)
                 try:
-                    ticket = reopen_ticket(tickets, input("Ticket ID to reopen: "))
+                    ticket_id = input("Ticket ID to reopen: ")
+                    ticket = reopen_ticket(tickets, ticket_id)
                     if _save_or_rollback(tickets, previous, tickets_path):
                         print(f"{ticket.id} reopened and set to open.")
                 except TicketValidationError as error:
                     print(f"Error: {error}")
+
             elif choice == "7":
                 print("CampusFlow closed.")
                 return
+
             elif choice == "8":
                 show_priority_queue(tickets)
-                if sys.stdin.isatty():
-                    input("Press Enter to return to the menu...")
+                _pause_if_interactive()
+
             elif choice == "9":
                 show_ticket_report(tickets)
-                if sys.stdin.isatty():
-                    input("Press Enter to return to the menu...")
+                _pause_if_interactive()
+
             elif choice == "10":
                 show_ticket_search(tickets)
+
             else:
-                print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.")
+                print(
+                    "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10."
+                )
+
     except (EOFError, KeyboardInterrupt):
         print("\nCampusFlow closed.")
 

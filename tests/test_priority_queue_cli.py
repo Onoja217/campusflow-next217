@@ -52,7 +52,9 @@ class PriorityQueueCliTests(unittest.TestCase):
         output = StringIO()
         with tempfile.TemporaryDirectory() as directory:
             tickets_path = Path(directory) / "tickets.json"
-            with patch("builtins.input", side_effect=["8", "7"]):
+            with patch("builtins.input", side_effect=["8", "7"]), patch(
+                "campusflow.cli.sys.stdin.isatty", return_value=False
+            ):
                 with redirect_stdout(output):
                     main(tickets_path)
 
