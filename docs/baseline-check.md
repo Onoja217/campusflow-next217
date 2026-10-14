@@ -88,3 +88,18 @@ This is a proposal for the two engineers to confirm, not a claim that the API al
 - [ ] After merge, rerun the suite on integrated `main` and record the resulting commit and CI run.
 
 **Baseline decision:** The existing test suite was recorded as green at the baseline commit. Proceed with Issue #47 as an additive, test-led change; do not rewrite the application or weaken existing persistence guarantees.
+
+
+## Issue #47 implementation and shared API update
+
+The Issue #47 / Issue #48 engineers agreed on the shared contract: immutable `FollowUpNote(id, content)`; `add_follow_up_note(...)` returns the created note or raises `TicketValidationError`; `get_follow_up_notes(...)` returns notes in creation order; IDs are globally sequential and persisted in each ticket's `notes` array; legacy records without `notes` remain valid; and notes can be added only to `open` or `in_progress` tickets.
+
+Peer review identified malformed collection handling in the read API and validation of existing notes before a mutable-mapping write. Regression tests and implementation hardening have been added on the Issue #47 branch. The PR remains a draft pending fresh CI, follow-up review, and confirmation that the merge conflict is resolved.
+
+## Implementation verification status
+
+- [x] Add the shared note model and API.
+- [x] Add regression tests for malformed collections/entries, non-mutation, and note-ID continuity after rejection.
+- [ ] Verify a fresh CI run on the updated head.
+- [ ] Confirm GitHub reports the PR as mergeable.
+- [ ] Obtain follow-up peer review and rerun tests after integration.
