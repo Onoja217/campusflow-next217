@@ -82,7 +82,7 @@ class FollowUpNoteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tickets.json"
             record = self.ticket.to_dict()
-            record.pop("notes")
+            record.pop("notes", None)
             path.write_text(json.dumps([record]), encoding="utf-8")
             loaded = load_tickets(path)
             self.assertEqual(get_follow_up_notes(loaded, self.ticket.id), ())
