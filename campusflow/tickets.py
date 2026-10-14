@@ -350,6 +350,32 @@ def next_follow_up_note_id(tickets: Iterable[TicketLike]) -> str:
     return f"N{highest + 1:03d}"
 
 
+def _validated_note_collection(raw_notes: object) -> tuple[FollowUpNote, ...]:
+    """Validate a complete note collection without mutating its source."""
+    if not isinstance(raw_notes, (list, tuple)):
+        raise TicketValidationError("Ticket notes are malformed; expected a list or tuple.")
+    normalized: list[FollowUpNote] = []
+    seen_ids: set[str] = set()
+    for raw_note in raw_notes:
+        if isinstance(raw_note, FollowUpNote):
+            note_id, content = raw_note.id, raw_note.content
+        elif isinstance(raw_note, Mapping):
+            note_id, content = raw_note.get("id"), raw_note.get("content")
+            if set(raw_note.keys()) != {"id", "content"}:
+                raise TicketValidationError("Ticket notes are malformed.")
+        else:
+            raise TicketValidationError("Ticket notes are malformed.")
+        if not isinstance(note_id, str) or not NOTE_ID_PATTERN.fullmatch(note_id):
+            raise TicketValidationError("Ticket notes contain an invalid note ID.")
+        if note_id in seen_ids:
+            raise TicketValidationError(f"Ticket notes contain duplicate note ID {note_id!r}.")
+        if not isinstance(content, str) or not content.strip():
+            raise TicketValidationError("Ticket notes contain invalid content.")
+        seen_ids.add(note_id)
+        normalized.append(FollowUpNote(note_id, content.strip()))
+    return tuple(normalized)
+
+
 def add_follow_up_note(
     tickets: MutableSequence[TicketLike], ticket_id: object, content: object
 ) -> FollowUpNote:
@@ -361,19 +387,28 @@ def add_follow_up_note(
         raise TicketValidationError("Notes can only be added to open or in-progress tickets.")
     if not isinstance(content, str) or not content.strip():
         raise TicketValidationError("Follow-up note cannot be blank.")
+    if isinstance(ticket, Ticket):
+        existing_notes = _validated_note_collection(ticket.notes)
+    elif isinstance(ticket, Mapping):
+        # A missing field is the legacy empty-note representation; an explicit
+        # malformed value must be rejected before any mutation or ID allocation.
+        existing_notes = _validated_note_collection(ticket.get("notes", []))
+    else:
+        raise TicketValidationError("This ticket record cannot be updated because it is read-only.")
+
     clean_content = content.strip()
     note = FollowUpNote(next_follow_up_note_id(tickets), clean_content)
     for index, candidate in enumerate(tickets):
         if candidate is not ticket:
             continue
         if isinstance(ticket, Ticket):
-            tickets[index] = replace(ticket, notes=(*ticket.notes, note))
+            tickets[index] = replace(ticket, notes=(*existing_notes, note))
             return note
         if isinstance(ticket, MutableMapping):
-            old_notes = ticket.get("notes", [])
-            if not isinstance(old_notes, (list, tuple)):
-                raise TicketValidationError("Ticket notes are malformed.")
-            ticket["notes"] = [*old_notes, {"id": note.id, "content": note.content}]
+            ticket["notes"] = [
+                {"id": item.id, "content": item.content}
+                for item in (*existing_notes, note)
+            ]
             return note
         raise TicketValidationError("This ticket record cannot be updated because it is read-only.")
     raise TicketValidationError(f"No ticket found with ID {ticket_id!r}.")
@@ -386,18 +421,13 @@ def get_follow_up_notes(
     ticket = get_ticket_by_id(tickets, ticket_id)
     if ticket is None:
         raise TicketValidationError(f"No ticket found with ID {ticket_id!r}.")
-    raw_notes = _field(ticket, "notes")
-    if raw_notes is None:
-        return ()
-    normalized: list[FollowUpNote] = []
-    for note in raw_notes:
-        if isinstance(note, FollowUpNote):
-            normalized.append(note)
-        elif isinstance(note, Mapping) and isinstance(note.get("id"), str) and isinstance(note.get("content"), str):
-            normalized.append(FollowUpNote(note["id"], note["content"]))
-        else:
-            raise TicketValidationError("Ticket notes are malformed.")
-    return tuple(normalized)
+    if isinstance(ticket, Ticket):
+        raw_notes = ticket.notes
+    elif isinstance(ticket, Mapping):
+        raw_notes = ticket.get("notes", [])
+    else:
+        raise TicketValidationError("Ticket notes are malformed.")
+    return _validated_note_collection(raw_notes)
 
 
 def format_ticket_list(tickets: Iterable[TicketLike]) -> str:
