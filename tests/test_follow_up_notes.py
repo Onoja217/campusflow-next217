@@ -154,10 +154,11 @@ class FollowUpNoteTests(unittest.TestCase):
                 ticket_record.update(extra)
                 tickets = [ticket_record]
                 before = [dict(ticket_record)]
+                next_id_before = next_follow_up_note_id(tickets)
                 with self.assertRaises(TicketValidationError):
                     add_follow_up_note(tickets, self.ticket.id, "New note")
                 self.assertEqual(tickets, before)
-                self.assertEqual(next_follow_up_note_id(tickets), "N001")
+                self.assertEqual(next_follow_up_note_id(tickets), next_id_before)
 
 if __name__ == "__main__":
     unittest.main()
