@@ -389,7 +389,7 @@ def add_follow_up_note(
         raise TicketValidationError("Follow-up note cannot be blank.")
     if isinstance(ticket, Ticket):
         existing_notes = _validated_note_collection(ticket.notes)
-    elif isinstance(ticket, Mapping):
+    elif isinstance(ticket, MutableMapping):
         # A missing field is the legacy empty-note representation; an explicit
         # malformed value must be rejected before any mutation or ID allocation.
         existing_notes = _validated_note_collection(ticket.get("notes", []))
