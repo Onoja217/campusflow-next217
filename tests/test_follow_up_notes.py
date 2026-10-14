@@ -133,5 +133,31 @@ class FollowUpNoteTests(unittest.TestCase):
         self.assertEqual(self.tickets, before)
 
 
+
+    def test_get_notes_rejects_non_collection_values(self):
+        for malformed in ("", {}, None):
+            with self.subTest(malformed=malformed):
+                tickets = [dict(self.ticket.to_dict(), notes=malformed)]
+                with self.assertRaises(TicketValidationError):
+                    get_follow_up_notes(tickets, self.ticket.id)
+
+    def test_add_note_rejects_malformed_existing_notes_without_mutation_or_id(self):
+        malformed_cases = (
+            {"notes": [{"id": "N001", "content": ""}]},
+            {"notes": [{"id": "bad-id", "content": "Existing"}]},
+            {"notes": ["not-a-note"]},
+            {"notes": ""},
+        )
+        for extra in malformed_cases:
+            with self.subTest(extra=extra):
+                ticket_record = self.ticket.to_dict()
+                ticket_record.update(extra)
+                tickets = [ticket_record]
+                before = [dict(ticket_record)]
+                with self.assertRaises(TicketValidationError):
+                    add_follow_up_note(tickets, self.ticket.id, "New note")
+                self.assertEqual(tickets, before)
+                self.assertEqual(next_follow_up_note_id(tickets), "N001")
+
 if __name__ == "__main__":
     unittest.main()
