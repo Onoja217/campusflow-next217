@@ -104,7 +104,7 @@ Issue #47 was merged through [PR #51](https://github.com/Onoja217/campusflow-nex
 
 - [x] Issue #47 changes merged into `main`.
 - [x] The PR's required CI run passed with 99 tests.
-- [ ] Confirm a successful full-suite run on the **integrated merge commit** `36dac2c891d7b620bc408d5403f421f3fe55f4ba`; the available run cited above is tied to the PR head, not the merge commit.
-- [ ] Verify any post-merge CI run and record its exact URL and test count here.
+- [x] The full suite also passed on PR #52's GitHub Actions merge candidate, based on the integrated `main` merge commit: [Python tests run #135](https://github.com/Onoja217/campusflow-next217/actions/runs/38588191314), **99 tests ran in 5.710 seconds**. This verifies the `main` base combined with the documentation branch, not a standalone push-triggered run on the exact `main` SHA.
+- [ ] Confirm a successful full-suite run triggered directly against the **integrated merge commit** `36dac2c891d7b620bc408d5403f421f3fe55f4ba`, if required by the repository's post-merge process.
 
 **Current decision:** The PR-head CI is green, but Issue #47 should not be described as having completed its post-merge verification gate until the integrated `main` run is confirmed.
