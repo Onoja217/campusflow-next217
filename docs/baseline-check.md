@@ -105,6 +105,9 @@ Issue #47 was merged through [PR #51](https://github.com/Onoja217/campusflow-nex
 - [x] Issue #47 changes merged into `main`.
 - [x] The PR's required CI run passed with 99 tests.
 - [x] The full suite also passed on PR #52's GitHub Actions merge candidate, based on the integrated `main` merge commit: [Python tests run #135](https://github.com/Onoja217/campusflow-next217/actions/runs/38588191314), **99 tests ran in 5.710 seconds**. This verifies the `main` base combined with the documentation branch, not a standalone push-triggered run on the exact `main` SHA.
-- [ ] Confirm a successful full-suite run triggered directly against the **integrated merge commit** `36dac2c891d7b620bc408d5403f421f3fe55f4ba`, if required by the repository's post-merge process.
+- [x] Confirm a successful full-suite run triggered directly against integrated `main`: [Python tests run #139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338) ran on current `main` commit `7d42c129ad9710592651d85e6bcae024df4639d7` and passed **100 tests in 5.784 seconds**.
+- [x] Confirm the fresh-process note-ID regression test and reviewer-requested malformed-note cases pass in the integrated-main run.
+- [x] Engineer B (Oabah1) reviewed the implementation, requested specific malformed-note validation tests, and later approved PR #51 after the follow-up fixes were included.
+- [x] The shared note API contract was agreed in the PR discussion for Issue #48 integration.
 
-**Current decision:** The PR-head CI is green, but Issue #47 should not be described as having completed its post-merge verification gate until the integrated `main` run is confirmed.
+**Final verification decision (2026-10-14):** The integrated-main CI gate is satisfied. The full suite passed on the current `main` SHA, and the reviewer-requested malformed-note cases plus fresh-process ID continuity test are included in that run. Local execution was not performed in the connected audit environment; the evidence here is GitHub Actions CI.
