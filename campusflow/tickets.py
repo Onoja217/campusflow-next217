@@ -61,8 +61,11 @@ class Ticket:
     notes: tuple[FollowUpNote, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
-        """Return a JSON-serializable representation of this ticket."""
-        return asdict(self)
+        """Return a JSON-serializable record, omitting empty notes for compatibility."""
+        record = asdict(self)
+        if not self.notes:
+            record.pop("notes", None)
+        return record
 
 
 TicketLike: TypeAlias = Ticket | Mapping[str, object]
@@ -326,7 +329,7 @@ def reopen_ticket(
 
 
 
-NOTE_ID_PATTERN = re.compile(r"^N(\\d+)$")
+NOTE_ID_PATTERN = re.compile(r"^N(\d+)$")
 
 
 def next_follow_up_note_id(tickets: Iterable[TicketLike]) -> str:
