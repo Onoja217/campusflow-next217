@@ -22,8 +22,6 @@ from .tickets import (
     format_ticket_details,
     format_ticket_list,
     get_ticket_by_id,
-    get_follow_up_notes,
-    add_follow_up_note,
     parse_affected_users_input,
     reopen_ticket,
 )
@@ -129,37 +127,6 @@ def show_ticket_search(tickets: list[Ticket]) -> None:
     print(format_ticket_list(matches))
 
 
-def add_ticket_note_from_cli(
-    tickets: list[Ticket], tickets_path: str | PathLike[str]
-) -> None:
-    """Add and persist a follow-up note through the shared ticket API."""
-    previous = list(tickets)
-    try:
-        ticket_id = input("Ticket ID for note: ")
-        content = input("Follow-up note: ")
-        note = add_follow_up_note(tickets, ticket_id, content)
-    except TicketValidationError as error:
-        print(f"Error: {error}")
-        return
-    if _save_or_rollback(tickets, previous, tickets_path):
-        print(f"Added note {note.id} to ticket {ticket_id.strip()}.")
-
-
-def show_ticket_notes(tickets: list[Ticket]) -> None:
-    """Display persisted follow-up notes using the shared read API."""
-    try:
-        ticket_id = input("Ticket ID to view notes: ")
-        notes = get_follow_up_notes(tickets, ticket_id)
-    except TicketValidationError as error:
-        print(f"Error: {error}")
-        return
-    if not notes:
-        print(f"No follow-up notes for {ticket_id.strip()}.")
-        return
-    for note in notes:
-        print(f"{note.id}: {note.content}")
-
-
 def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
     """Print one ticket's details or a friendly not-found message."""
     if not tickets:
@@ -193,7 +160,6 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 "\n4. Assign ticket\n5. Change ticket status\n6. Reopen resolved ticket"
                 "\n7. Exit\n8. Show unresolved priority queue"
                 "\n9. Show ticket report\n10. Search and filter tickets"
-                "\n11. Add follow-up note\n12. View follow-up notes"
             )
             choice = input("Choose an option: ").strip()
             if choice == "1":
@@ -245,12 +211,8 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                     input("Press Enter to return to the menu...")
             elif choice == "10":
                 show_ticket_search(tickets)
-            elif choice == "11":
-                add_ticket_note_from_cli(tickets, tickets_path)
-            elif choice == "12":
-                show_ticket_notes(tickets)
             else:
-                print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, or 12.")
+                print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.")
     except (EOFError, KeyboardInterrupt):
         print("\nCampusFlow closed.")
 

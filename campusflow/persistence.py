@@ -18,7 +18,6 @@ from .tickets import (
     PRIORITIES,
     TICKET_STATUSES,
     URGENCY_LEVELS,
-    FollowUpNote,
     Ticket,
     TicketValidationError,
     calculate_priority,
@@ -39,7 +38,6 @@ _REQUIRED_FIELDS = {
     "status",
     "assigned_to",
 }
-_NOTE_FIELDS = {"id", "content"}
 _TICKET_ID = re.compile(r"^T[0-9]+$")
 
 
@@ -54,10 +52,9 @@ def _validate_record(value: object, index: int) -> Ticket:
         raise TicketPersistenceError(f"{prefix} must be a JSON object.")
 
     keys = set(value)
-    allowed_shapes = (_REQUIRED_FIELDS, _REQUIRED_FIELDS | {"notes"})
-    if keys not in allowed_shapes:
+    if keys != _REQUIRED_FIELDS:
         missing = sorted(_REQUIRED_FIELDS - keys)
-        extra = sorted(keys - (_REQUIRED_FIELDS | {"notes"}))
+        extra = sorted(keys - _REQUIRED_FIELDS)
         details = []
         if missing:
             details.append(f"missing fields: {', '.join(missing)}")
@@ -102,34 +99,7 @@ def _validate_record(value: object, index: int) -> Ticket:
             f"{prefix} cannot be in_progress without an assigned_to value."
         )
 
-    raw_notes = value.get("notes", [])
-    if not isinstance(raw_notes, (list, tuple)):
-        raise TicketPersistenceError(f"{prefix} has invalid notes; expected an array.")
-    notes: list[FollowUpNote] = []
-    seen_note_ids: set[str] = set()
-    for note_index, note in enumerate(raw_notes, start=1):
-        note_prefix = f"{prefix}, note {note_index}"
-        if not isinstance(note, dict) and not hasattr(note, "keys"):
-            raise TicketPersistenceError(f"{note_prefix} must be a JSON object.")
-        if set(note.keys()) != _NOTE_FIELDS:
-            raise TicketPersistenceError(f"{note_prefix} has an invalid shape.")
-        note_id = note.get("id")
-        content = note.get("content")
-        if not isinstance(note_id, str) or not re.fullmatch(r"^N[0-9]+$", note_id):
-            raise TicketPersistenceError(f"{note_prefix} has an invalid note ID.")
-        if note_id in seen_note_ids:
-            raise TicketPersistenceError(f"{note_prefix} has a duplicate note ID {note_id!r}.")
-        if not isinstance(content, str) or not content.strip():
-            raise TicketPersistenceError(f"{note_prefix} has invalid content.")
-        seen_note_ids.add(note_id)
-        notes.append(FollowUpNote(note_id, content.strip()))
-
-    return Ticket(
-        id=value["id"], title=value["title"], category=value["category"],
-        urgency=value["urgency"], affected_users=value["affected_users"],
-        priority=value["priority"], status=value["status"],
-        assigned_to=value["assigned_to"], notes=tuple(notes),
-    )
+    return Ticket(**value)
 
 
 def load_tickets(path: str | os.PathLike[str] = DEFAULT_TICKETS_PATH) -> list[Ticket]:
@@ -156,7 +126,6 @@ def load_tickets(path: str | os.PathLike[str] = DEFAULT_TICKETS_PATH) -> list[Ti
 
     tickets: list[Ticket] = []
     seen_ids: set[str] = set()
-    seen_note_ids: set[str] = set()
     for index, record in enumerate(payload, start=1):
         ticket = _validate_record(record, index)
         if ticket.id in seen_ids:
@@ -164,12 +133,6 @@ def load_tickets(path: str | os.PathLike[str] = DEFAULT_TICKETS_PATH) -> list[Ti
                 f"Ticket file '{source}' contains duplicate ID {ticket.id!r}."
             )
         seen_ids.add(ticket.id)
-        for note in ticket.notes:
-            if note.id in seen_note_ids:
-                raise TicketPersistenceError(
-                    f"Ticket file '{source}' contains duplicate note ID {note.id!r}."
-                )
-            seen_note_ids.add(note.id)
         tickets.append(ticket)
     return tickets
 
@@ -182,16 +145,11 @@ def save_tickets(
     destination = Path(path)
     records = []
     seen_ids: set[str] = set()
-    seen_note_ids: set[str] = set()
     for index, ticket in enumerate(tickets, start=1):
         record = _validate_record(ticket.to_dict() if isinstance(ticket, Ticket) else ticket, index)
         if record.id in seen_ids:
             raise TicketPersistenceError(f"Cannot save duplicate ticket ID {record.id!r}.")
         seen_ids.add(record.id)
-        for note in record.notes:
-            if note.id in seen_note_ids:
-                raise TicketPersistenceError(f"Cannot save duplicate note ID {note.id!r}.")
-            seen_note_ids.add(note.id)
         records.append(record.to_dict())
 
     temporary_path: str | None = None

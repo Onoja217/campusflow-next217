@@ -6,7 +6,7 @@ truth for sequential ID generation and ticket views.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import asdict, dataclass, replace
 import re
 from typing import Iterable, Mapping, MutableMapping, MutableSequence, TypeAlias
 
@@ -39,16 +39,8 @@ class TicketValidationError(ValueError):
 
 
 @dataclass(frozen=True)
-class FollowUpNote:
-    """A validated, persistent note attached to a ticket."""
-
-    id: str
-    content: str
-
-
-@dataclass(frozen=True)
 class Ticket:
-    """Ticket record; notes default empty for backward-compatible callers."""
+    """The eight-field ticket record used by CampusFlow."""
 
     id: str
     title: str
@@ -58,14 +50,10 @@ class Ticket:
     priority: str
     status: str
     assigned_to: str | None
-    notes: tuple[FollowUpNote, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
-        """Return a JSON-serializable record, omitting empty notes for compatibility."""
-        record = asdict(self)
-        if not self.notes:
-            record.pop("notes", None)
-        return record
+        """Return a JSON-serializable representation of this ticket."""
+        return asdict(self)
 
 
 TicketLike: TypeAlias = Ticket | Mapping[str, object]
@@ -326,108 +314,6 @@ def reopen_ticket(
             return _replace_ticket_status(tickets, index, "open")
 
     raise TicketValidationError(f"No ticket found with ID {ticket_id!r}.")
-
-
-
-NOTE_ID_PATTERN = re.compile(r"^N(\d+)$")
-
-
-def next_follow_up_note_id(tickets: Iterable[TicketLike]) -> str:
-    """Return the next global note ID from the highest existing numeric suffix."""
-    highest = 0
-    for ticket in tickets:
-        raw_notes = _field(ticket, "notes")
-        if not isinstance(raw_notes, (list, tuple)):
-            continue
-        for note in raw_notes:
-            raw_id = note.id if isinstance(note, FollowUpNote) else (
-                note.get("id") if isinstance(note, Mapping) else None
-            )
-            if isinstance(raw_id, str):
-                match = NOTE_ID_PATTERN.fullmatch(raw_id)
-                if match:
-                    highest = max(highest, int(match.group(1)))
-    return f"N{highest + 1:03d}"
-
-
-def _validated_note_collection(raw_notes: object) -> tuple[FollowUpNote, ...]:
-    """Validate a complete note collection without mutating its source."""
-    if not isinstance(raw_notes, (list, tuple)):
-        raise TicketValidationError("Ticket notes are malformed; expected a list or tuple.")
-    normalized: list[FollowUpNote] = []
-    seen_ids: set[str] = set()
-    for raw_note in raw_notes:
-        if isinstance(raw_note, FollowUpNote):
-            note_id, content = raw_note.id, raw_note.content
-        elif isinstance(raw_note, Mapping):
-            note_id, content = raw_note.get("id"), raw_note.get("content")
-            if set(raw_note.keys()) != {"id", "content"}:
-                raise TicketValidationError("Ticket notes are malformed.")
-        else:
-            raise TicketValidationError("Ticket notes are malformed.")
-        if not isinstance(note_id, str) or not NOTE_ID_PATTERN.fullmatch(note_id):
-            raise TicketValidationError("Ticket notes contain an invalid note ID.")
-        if note_id in seen_ids:
-            raise TicketValidationError(f"Ticket notes contain duplicate note ID {note_id!r}.")
-        if not isinstance(content, str) or not content.strip():
-            raise TicketValidationError("Ticket notes contain invalid content.")
-        seen_ids.add(note_id)
-        normalized.append(FollowUpNote(note_id, content.strip()))
-    return tuple(normalized)
-
-
-def add_follow_up_note(
-    tickets: MutableSequence[TicketLike], ticket_id: object, content: object
-) -> FollowUpNote:
-    """Validate first, then append a note without consuming IDs on rejection."""
-    ticket = get_ticket_by_id(tickets, ticket_id)
-    if ticket is None:
-        raise TicketValidationError(f"No ticket found with ID {ticket_id!r}.")
-    if _field(ticket, "status") not in ("open", "in_progress"):
-        raise TicketValidationError("Notes can only be added to open or in-progress tickets.")
-    if not isinstance(content, str) or not content.strip():
-        raise TicketValidationError("Follow-up note cannot be blank.")
-    if isinstance(ticket, Ticket):
-        existing_notes = _validated_note_collection(ticket.notes)
-    elif isinstance(ticket, MutableMapping):
-        # A missing field is the legacy empty-note representation; an explicit
-        # malformed value must be rejected before any mutation or ID allocation.
-        existing_notes = _validated_note_collection(ticket.get("notes", []))
-    else:
-        raise TicketValidationError("This ticket record cannot be updated because it is read-only.")
-
-    clean_content = content.strip()
-    note = FollowUpNote(next_follow_up_note_id(tickets), clean_content)
-    for index, candidate in enumerate(tickets):
-        if candidate is not ticket:
-            continue
-        if isinstance(ticket, Ticket):
-            tickets[index] = replace(ticket, notes=(*existing_notes, note))
-            return note
-        if isinstance(ticket, MutableMapping):
-            ticket["notes"] = [
-                {"id": item.id, "content": item.content}
-                for item in (*existing_notes, note)
-            ]
-            return note
-        raise TicketValidationError("This ticket record cannot be updated because it is read-only.")
-    raise TicketValidationError(f"No ticket found with ID {ticket_id!r}.")
-
-
-def get_follow_up_notes(
-    tickets: Iterable[TicketLike], ticket_id: object
-) -> tuple[FollowUpNote, ...]:
-    """Return a ticket's notes in creation order without changing state."""
-    ticket = get_ticket_by_id(tickets, ticket_id)
-    if ticket is None:
-        raise TicketValidationError(f"No ticket found with ID {ticket_id!r}.")
-    if isinstance(ticket, Ticket):
-        raw_notes = ticket.notes
-    elif isinstance(ticket, Mapping):
-        raw_notes = ticket.get("notes", [])
-    else:
-        raise TicketValidationError("Ticket notes are malformed.")
-    return _validated_note_collection(raw_notes)
 
 
 def format_ticket_list(tickets: Iterable[TicketLike]) -> str:
