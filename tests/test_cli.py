@@ -143,8 +143,24 @@ class InteractiveCliTests(unittest.TestCase):
     def test_invalid_menu_option_keeps_cli_running(self):
         output = self.run_cli(["x", "7"])
 
-        self.assertIn("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, or 9.", output)
+        self.assertIn("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.", output)
         self.assertIn("CampusFlow closed.", output)
+
+    def test_search_menu_combines_title_and_filters(self):
+        output = self.run_cli([
+            "1", "Wi-Fi not working", "Network", "high", "10",
+            "1", "Office printer jam", "Hardware", "medium", "2",
+            "10", "wifi", "Network", "open", "high",
+            "7",
+        ])
+
+        self.assertIn("10. Search and filter tickets", output)
+        self.assertIn("Wi-Fi not working", output)
+        self.assertNotIn("Office printer jam", output)
+
+    def test_search_menu_reports_no_matches(self):
+        output = self.run_cli(["10", "not found", "", "", "", "7"])
+        self.assertIn("No matching tickets found.", output)
 
     def test_eof_exits_cleanly(self):
         output = StringIO()
@@ -159,7 +175,6 @@ class InteractiveCliTests(unittest.TestCase):
             with patch("builtins.input", side_effect=KeyboardInterrupt), redirect_stdout(output):
                 main(Path(directory) / "tickets.json")
         self.assertIn("CampusFlow closed.", output.getvalue())
-
 
     def test_list_waits_for_enter_in_interactive_terminal(self):
         output = StringIO()
@@ -187,7 +202,6 @@ class InteractiveCliTests(unittest.TestCase):
         mocked_input.assert_any_call("Press Enter to return to the menu...")
         self.assertIn("CampusFlow closed.", output.getvalue())
 
-
     def test_priority_queue_waits_for_enter_in_interactive_terminal(self):
         output = StringIO()
         with tempfile.TemporaryDirectory() as directory:
@@ -200,7 +214,6 @@ class InteractiveCliTests(unittest.TestCase):
         self.assertIn("No unresolved tickets.", output.getvalue())
         mocked_input.assert_any_call("Press Enter to return to the menu...")
         self.assertIn("CampusFlow closed.", output.getvalue())
-
 
 
 if __name__ == "__main__":
