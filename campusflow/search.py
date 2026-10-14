@@ -5,7 +5,6 @@ from collections.abc import Iterable, Mapping
 from typing import TypeAlias
 
 from .tickets import (
-    CATEGORIES,
     PRIORITIES,
     TICKET_STATUSES,
     Ticket,
