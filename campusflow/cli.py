@@ -12,6 +12,7 @@ from .persistence import (
 )
 from .priority_queue import prioritized_tickets
 from .reports import build_ticket_report
+from .search import search_tickets
 from .tickets import (
     Ticket,
     TicketValidationError,
@@ -87,15 +88,43 @@ def show_priority_queue(tickets: list[Ticket]) -> None:
 
 
 def show_ticket_report(tickets: list[Ticket]) -> None:
-    """Print workload totals by status and priority."""
+    """Print workload totals by category, status, priority, and resolution."""
     report = build_ticket_report(tickets)
     print(f"Total tickets: {report['total']}")
+    print(f"Resolution percentage: {report['resolution_percentage']:.1f}%")
+    print("\nBy category:")
+    for category, count in report["by_category"].items():
+        print(f"  {category}: {count}")
     print("\nBy status:")
     for status, count in report["by_status"].items():
         print(f"  {status}: {count}")
     print("\nBy priority:")
     for priority, count in report["by_priority"].items():
         print(f"  {priority}: {count}")
+
+
+def show_ticket_search(tickets: list[Ticket]) -> None:
+    """Prompt for optional search terms and filters, then print matching tickets."""
+    try:
+        title = input("Title contains (leave blank for any): ")
+        category = input("Category (Network/Hardware/Software/Other, blank for any): ")
+        status = input("Status (open/in_progress/resolved, blank for any): ")
+        priority = input("Priority (low/medium/high/critical, blank for any): ")
+        matches = search_tickets(
+            tickets,
+            title=title,
+            category=category,
+            status=status,
+            priority=priority,
+        )
+    except TicketValidationError as error:
+        print(f"Error: {error}")
+        return
+
+    if not matches:
+        print("No matching tickets found.")
+        return
+    print(format_ticket_list(matches))
 
 
 def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
@@ -130,15 +159,13 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 "\n1. Create ticket\n2. List all tickets\n3. View ticket by ID"
                 "\n4. Assign ticket\n5. Change ticket status\n6. Reopen resolved ticket"
                 "\n7. Exit\n8. Show unresolved priority queue"
-                "\n9. Show ticket report"
+                "\n9. Show ticket report\n10. Search and filter tickets"
             )
             choice = input("Choose an option: ").strip()
             if choice == "1":
                 prompt_for_ticket(tickets, tickets_path)
             elif choice == "2":
                 show_tickets(tickets)
-                # Keep the list visible in interactive terminals instead of
-                # immediately printing the menu over the result.
                 if sys.stdin.isatty():
                     input("Press Enter to return to the menu...")
             elif choice == "3":
@@ -176,18 +203,16 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 return
             elif choice == "8":
                 show_priority_queue(tickets)
-                # Keep the queue visible in interactive terminals until the
-                # user is ready to return to the menu.
                 if sys.stdin.isatty():
                     input("Press Enter to return to the menu...")
             elif choice == "9":
                 show_ticket_report(tickets)
-                # Keep the report visible in interactive terminals, just like
-                # the ticket list, until the user is ready to return.
                 if sys.stdin.isatty():
                     input("Press Enter to return to the menu...")
+            elif choice == "10":
+                show_ticket_search(tickets)
             else:
-                print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, or 9.")
+                print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.")
     except (EOFError, KeyboardInterrupt):
         print("\nCampusFlow closed.")
 
