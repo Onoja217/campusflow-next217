@@ -2,12 +2,12 @@
 
 CampusFlow is a Python helpdesk ticket tracker with an interactive command-line interface (CLI) and a local browser dashboard. It supports validated ticket creation, automatic priority calculation, assignment, status changes, an unresolved-ticket priority queue, workload reports by status and priority, and JSON persistence.
 
-## Current development status (14 October 2026)
+## Current development status (15 October 2026)
 
 - **Issue #47 — reliability and follow-up notes:** merged through [PR #51](https://github.com/Onoja217/campusflow-next217/pull/51). The shared note API supports validated notes on open/in-progress tickets, sequential note IDs, JSON persistence, and retaining notes through resolve/reopen. Legacy ticket records without a `notes` field remain supported.
-- **Verification:** GitHub Actions run [#139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338) passed **100 tests** on integrated `main` commit [`7d42c129ad9710592651d85e6bcae024df4639d7`](https://github.com/Onoja217/campusflow-next217/commit/7d42c129ad9710592651d85e6bcae024df4639d7). The latest local run reported by the project owner also passed 100 tests using `python3 -m unittest discover -s tests -v </dev/null`.
-- **Issue #48 — search, filters, reports, and CLI note integration:** in progress in [draft PR #50](https://github.com/Onoja217/campusflow-next217/pull/50), owned by Engineer B (Oabah1). The draft covers case-insensitive title search, AND-combined category/status/priority filters, expanded report counts, and safe resolution percentages. Follow-up-note CLI actions remain pending; they must call Issue #47's shared API. These draft changes are **not yet part of `main`**.
-- **Next integration gate:** finish PR #50, verify note CLI integration, obtain peer review, and confirm all required CI checks pass before merging.
+- **Verification:** GitHub Actions run [#139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338) passed **100 tests** on integrated `main` commit [`7d42c129ad9710592651d85e6bcae024df4639d7`](https://github.com/Onoja217/campusflow-next217/commit/7d42c129ad9710592651d85e6bcae024df4639d7). The latest local run reported by the project owner passed 114 tests using `python3 -m unittest discover -s tests -v`.
+- **Issue #48 — search, filters, reports, and CLI note integration:** in progress in [draft PR #50](https://github.com/Onoja217/campusflow-next217/pull/50), owned by Engineer B (Oabah1). The draft covers case-insensitive title search, AND-combined category/status/priority filters, expanded report counts, and safe resolution percentages. Follow-up-note CLI actions are implemented as menu option 11 (add) and menu option 12 (view), using Issue #47's shared API and covered by CLI tests. These draft changes are **not yet part of `main`**.
+- **Next integration gate:** review the completed CLI note integration, obtain peer review, and confirm all required CI checks pass before merging PR #50.
 
 ## Features
 
@@ -21,7 +21,7 @@ CampusFlow is a Python helpdesk ticket tracker with an interactive command-line 
 - **Review the priority queue:** order unresolved tickets by priority; resolved tickets are excluded.
 - **View workload reports:** show totals by status and priority, including categories with zero tickets.
 - **Save work:** persist tickets in JSON so they remain available after restart.
-- **Record follow-up notes:** add and retrieve validated notes through the shared ticket API; notes persist in JSON and remain attached when a ticket is resolved and reopened.
+- **Record follow-up notes:** use CLI menu options 11 and 12 to add and retrieve validated notes through the shared ticket API; notes persist in JSON and remain attached when a ticket is resolved and reopened.
 - **Use either interface:** the CLI and browser dashboard share the same ticket rules and default JSON file.
 
 ## Requirements
@@ -147,7 +147,7 @@ The table below reflects the current CampusFlow Next collaboration.
 ### Relevant pull requests
 
 - [PR #51 — Follow-up-note API and persistence](https://github.com/Onoja217/campusflow-next217/pull/51): provides the shared API for validating, storing, and retrieving follow-up notes.
-- [PR #50 — Search, filters, and report analytics](https://github.com/Onoja217/campusflow-next217/pull/50): contains Engineer B's search, reporting, and CLI integration work. The pull request remains under review; follow-up-note CLI actions must not be considered complete until they are implemented and verified.
+- [PR #50 — Search, filters, and report analytics](https://github.com/Onoja217/campusflow-next217/pull/50): contains Engineer B's search, reporting, and CLI integration work. The pull request remains under review; follow-up-note CLI actions are implemented through menu options 11 and 12 and covered by CLI tests.
 
 ## Known limitations and future improvements
 

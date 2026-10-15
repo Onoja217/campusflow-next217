@@ -15,12 +15,16 @@ class InteractiveCliTests(unittest.TestCase):
             temporary_directory = tempfile.TemporaryDirectory()
             self.addCleanup(temporary_directory.cleanup)
             tickets_path = Path(temporary_directory.name) / "tickets.json"
+
         output = StringIO()
+
         with patch("campusflow.cli.sys.stdin") as stdin:
             stdin.isatty.return_value = False
+
             with patch("builtins.input", side_effect=inputs):
                 with redirect_stdout(output):
                     main(tickets_path)
+
         return output.getvalue()
 
     def test_create_list_and_view_ticket_in_one_session(self):
@@ -72,12 +76,14 @@ class InteractiveCliTests(unittest.TestCase):
     def test_tickets_persist_between_separate_cli_runs(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tickets.json"
+
             first = self.run_cli([
                 "1", "Wi-Fi unavailable", "Network", "high", "10",
                 "4", "T001", "Ada Okafor",
                 "5", "T001", "in_progress",
                 "7",
             ], path)
+
             second = self.run_cli(["2", "3", "T001", "7"], path)
 
         self.assertIn("Created T001: Wi-Fi unavailable", first)
@@ -90,12 +96,15 @@ class InteractiveCliTests(unittest.TestCase):
     def test_new_ticket_id_continues_after_separate_cli_restart(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tickets.json"
+
             first = self.run_cli([
                 "1", "First ticket", "Network", "low", "1", "7",
             ], path)
+
             second = self.run_cli([
                 "1", "Second ticket", "Hardware", "medium", "2", "7",
             ], path)
+
             third = self.run_cli(["2", "7"], path)
 
         self.assertIn("Created T001: First ticket", first)
@@ -108,10 +117,15 @@ class InteractiveCliTests(unittest.TestCase):
             path = Path(directory) / "tickets.json"
             original = "this is not JSON"
             path.write_text(original, encoding="utf-8")
+
             output = self.run_cli([
                 "1", "Should not create", "Network", "low", "1", "7"
             ], path)
-            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+            self.assertEqual(
+                path.read_text(encoding="utf-8"),
+                original,
+            )
 
         self.assertIn("Persistence error:", output)
         self.assertIn("stopped to protect", output)
@@ -148,7 +162,8 @@ class InteractiveCliTests(unittest.TestCase):
         output = self.run_cli(["x", "7"])
 
         self.assertIn(
-            "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.",
+            "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, "
+            "8, 9, 10, 11, or 12.",
             output,
         )
         self.assertIn("CampusFlow closed.", output)
@@ -169,29 +184,114 @@ class InteractiveCliTests(unittest.TestCase):
             output,
         )
 
+    def test_cli_can_add_and_view_follow_up_note(self):
+        output = self.run_cli([
+            "1", "Wi-Fi unavailable", "Network", "high", "10",
+            "11", "T001", "Router restarted; monitoring connection.",
+            "12", "T001",
+            "7",
+        ])
+
+        self.assertIn("Created T001: Wi-Fi unavailable", output)
+        self.assertIn(
+            "Follow-up note N001 added to ticket T001.",
+            output,
+        )
+        self.assertIn("Follow-up notes for ticket T001:", output)
+        self.assertIn(
+            "N001: Router restarted; monitoring connection.",
+            output,
+        )
+
+    def test_follow_up_note_persists_between_cli_runs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tickets.json"
+
+            first = self.run_cli([
+                "1", "Wi-Fi unavailable", "Network", "high", "10",
+                "11", "T001", "Technician is investigating.",
+                "7",
+            ], path)
+
+            second = self.run_cli([
+                "12", "T001",
+                "7",
+            ], path)
+
+        self.assertIn(
+            "Follow-up note N001 added to ticket T001.",
+            first,
+        )
+        self.assertIn(
+            "N001: Technician is investigating.",
+            second,
+        )
+
+    def test_cli_rejects_blank_follow_up_note(self):
+        output = self.run_cli([
+            "1", "Wi-Fi unavailable", "Network", "high", "10",
+            "11", "T001", "   ",
+            "12", "T001",
+            "7",
+        ])
+
+        self.assertIn(
+            "Error: Follow-up note cannot be blank.",
+            output,
+        )
+        self.assertIn(
+            "No follow-up notes found for ticket T001.",
+            output,
+        )
+
+    def test_cli_rejects_follow_up_note_for_unknown_ticket(self):
+        output = self.run_cli([
+            "11", "T999", "This ticket does not exist.",
+            "12", "T999",
+            "7",
+        ])
+
+        self.assertIn(
+            "Error: No ticket found with ID 'T999'.",
+            output,
+        )
+
     def test_search_menu_reports_no_matches(self):
         output = self.run_cli(["10", "not found", "", "", "", "7"])
+
         self.assertIn("No matching tickets found.", output)
 
     def test_eof_exits_cleanly(self):
         output = StringIO()
+
         with tempfile.TemporaryDirectory() as directory:
-            with patch("builtins.input", side_effect=EOFError), redirect_stdout(output):
+            with patch(
+                "builtins.input",
+                side_effect=EOFError,
+            ), redirect_stdout(output):
                 main(Path(directory) / "tickets.json")
+
         self.assertIn("CampusFlow closed.", output.getvalue())
 
     def test_keyboard_interrupt_exits_cleanly(self):
         output = StringIO()
+
         with tempfile.TemporaryDirectory() as directory:
-            with patch("builtins.input", side_effect=KeyboardInterrupt), redirect_stdout(output):
+            with patch(
+                "builtins.input",
+                side_effect=KeyboardInterrupt,
+            ), redirect_stdout(output):
                 main(Path(directory) / "tickets.json")
+
         self.assertIn("CampusFlow closed.", output.getvalue())
 
     def test_list_waits_for_enter_in_interactive_terminal(self):
         output = StringIO()
+
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
+
                 with patch(
                     "builtins.input",
                     side_effect=["2", "", "7"],
@@ -200,14 +300,18 @@ class InteractiveCliTests(unittest.TestCase):
                         main(Path(directory) / "tickets.json")
 
         self.assertIn("No tickets found.", output.getvalue())
-        mocked_input.assert_any_call("Press Enter to return to the menu...")
+        mocked_input.assert_any_call(
+            "Press Enter to return to the menu..."
+        )
         self.assertIn("CampusFlow closed.", output.getvalue())
 
     def test_report_waits_for_enter_in_interactive_terminal(self):
         output = StringIO()
+
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
+
                 with patch(
                     "builtins.input",
                     side_effect=["9", "", "7"],
@@ -216,14 +320,18 @@ class InteractiveCliTests(unittest.TestCase):
                         main(Path(directory) / "tickets.json")
 
         self.assertIn("Total tickets: 0", output.getvalue())
-        mocked_input.assert_any_call("Press Enter to return to the menu...")
+        mocked_input.assert_any_call(
+            "Press Enter to return to the menu..."
+        )
         self.assertIn("CampusFlow closed.", output.getvalue())
 
     def test_priority_queue_waits_for_enter_in_interactive_terminal(self):
         output = StringIO()
+
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
+
                 with patch(
                     "builtins.input",
                     side_effect=["8", "", "7"],
@@ -231,15 +339,22 @@ class InteractiveCliTests(unittest.TestCase):
                     with redirect_stdout(output):
                         main(Path(directory) / "tickets.json")
 
-        self.assertIn("No unresolved tickets.", output.getvalue())
-        mocked_input.assert_any_call("Press Enter to return to the menu...")
+        self.assertIn(
+            "No unresolved tickets.",
+            output.getvalue(),
+        )
+        mocked_input.assert_any_call(
+            "Press Enter to return to the menu..."
+        )
         self.assertIn("CampusFlow closed.", output.getvalue())
 
     def test_search_waits_for_enter_in_interactive_terminal(self):
         output = StringIO()
+
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
+
                 with patch(
                     "builtins.input",
                     side_effect=["10", "", "", "", "", "", "7"],
@@ -247,8 +362,13 @@ class InteractiveCliTests(unittest.TestCase):
                     with redirect_stdout(output):
                         main(Path(directory) / "tickets.json")
 
-        self.assertIn("No matching tickets found.", output.getvalue())
-        mocked_input.assert_any_call("Press Enter to return to the menu...")
+        self.assertIn(
+            "No matching tickets found.",
+            output.getvalue(),
+        )
+        mocked_input.assert_any_call(
+            "Press Enter to return to the menu..."
+        )
         self.assertIn("CampusFlow closed.", output.getvalue())
 
 

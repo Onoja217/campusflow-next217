@@ -16,11 +16,13 @@ from .search import search_tickets
 from .tickets import (
     Ticket,
     TicketValidationError,
+    add_follow_up_note,
     assign_ticket,
     change_ticket_status,
     create_ticket,
     format_ticket_details,
     format_ticket_list,
+    get_follow_up_notes,
     get_ticket_by_id,
     parse_affected_users_input,
     reopen_ticket,
@@ -159,6 +161,49 @@ def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
     print(format_ticket_details(ticket))
 
 
+def prompt_for_follow_up_note(
+    tickets: list[Ticket],
+    tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH,
+) -> None:
+    """Add and save a follow-up note to an eligible ticket."""
+    previous = list(tickets)
+
+    try:
+        ticket_id = input("Ticket ID for the follow-up note: ")
+        content = input("Follow-up note: ")
+
+        note = add_follow_up_note(tickets, ticket_id, content)
+
+    except TicketValidationError as error:
+        print(f"Error: {error}")
+        return
+
+    if not _save_or_rollback(tickets, previous, tickets_path):
+        return
+
+    print(f"Follow-up note {note.id} added to ticket {ticket_id.strip()}.")
+
+
+def prompt_to_view_follow_up_notes(tickets: list[Ticket]) -> None:
+    """Prompt for a ticket ID and display its follow-up notes."""
+    ticket_id = input("Ticket ID to view follow-up notes: ")
+
+    try:
+        notes = get_follow_up_notes(tickets, ticket_id)
+
+    except TicketValidationError as error:
+        print(f"Error: {error}")
+        return
+
+    if not notes:
+        print(f"No follow-up notes found for ticket {ticket_id.strip()}.")
+        return
+
+    print(f"\nFollow-up notes for ticket {ticket_id.strip()}:")
+    for note in notes:
+        print(f"  {note.id}: {note.content}")
+
+
 def _pause_if_interactive() -> None:
     """Pause after a result only when running in an interactive terminal."""
     if sys.stdin.isatty():
@@ -188,7 +233,9 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 "7. Exit\n"
                 "8. Show unresolved priority queue\n"
                 "9. Show ticket report\n"
-                "10. Search and filter tickets"
+                "10. Search and filter tickets\n"
+                "11. Add follow-up note\n"
+                "12. View follow-up notes"
             )
 
             choice = input("Choose an option: ").strip()
@@ -251,9 +298,17 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 show_ticket_search(tickets)
                 _pause_if_interactive()
 
+            elif choice == "11":
+                prompt_for_follow_up_note(tickets, tickets_path)
+
+            elif choice == "12":
+                prompt_to_view_follow_up_notes(tickets)
+                _pause_if_interactive()
+
             else:
                 print(
-                    "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10."
+                    "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, "
+                    "8, 9, 10, 11, or 12."
                 )
 
     except (EOFError, KeyboardInterrupt):
