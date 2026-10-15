@@ -249,6 +249,7 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
 
             elif choice == "10":
                 show_ticket_search(tickets)
+                _pause_if_interactive()
 
             else:
                 print(

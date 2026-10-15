@@ -108,7 +108,9 @@ class InteractiveCliTests(unittest.TestCase):
             path = Path(directory) / "tickets.json"
             original = "this is not JSON"
             path.write_text(original, encoding="utf-8")
-            output = self.run_cli(["1", "Should not create", "Network", "low", "1", "7"], path)
+            output = self.run_cli([
+                "1", "Should not create", "Network", "low", "1", "7"
+            ], path)
             self.assertEqual(path.read_text(encoding="utf-8"), original)
 
         self.assertIn("Persistence error:", output)
@@ -145,7 +147,10 @@ class InteractiveCliTests(unittest.TestCase):
     def test_invalid_menu_option_keeps_cli_running(self):
         output = self.run_cli(["x", "7"])
 
-        self.assertIn("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.", output)
+        self.assertIn(
+            "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, 9, or 10.",
+            output,
+        )
         self.assertIn("CampusFlow closed.", output)
 
     def test_search_menu_combines_title_and_filters(self):
@@ -187,7 +192,10 @@ class InteractiveCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
-                with patch("builtins.input", side_effect=["2", "", "7"]) as mocked_input:
+                with patch(
+                    "builtins.input",
+                    side_effect=["2", "", "7"],
+                ) as mocked_input:
                     with redirect_stdout(output):
                         main(Path(directory) / "tickets.json")
 
@@ -200,7 +208,10 @@ class InteractiveCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
-                with patch("builtins.input", side_effect=["9", "", "7"]) as mocked_input:
+                with patch(
+                    "builtins.input",
+                    side_effect=["9", "", "7"],
+                ) as mocked_input:
                     with redirect_stdout(output):
                         main(Path(directory) / "tickets.json")
 
@@ -213,11 +224,30 @@ class InteractiveCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch("campusflow.cli.sys.stdin") as stdin:
                 stdin.isatty.return_value = True
-                with patch("builtins.input", side_effect=["8", "", "7"]) as mocked_input:
+                with patch(
+                    "builtins.input",
+                    side_effect=["8", "", "7"],
+                ) as mocked_input:
                     with redirect_stdout(output):
                         main(Path(directory) / "tickets.json")
 
         self.assertIn("No unresolved tickets.", output.getvalue())
+        mocked_input.assert_any_call("Press Enter to return to the menu...")
+        self.assertIn("CampusFlow closed.", output.getvalue())
+
+    def test_search_waits_for_enter_in_interactive_terminal(self):
+        output = StringIO()
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("campusflow.cli.sys.stdin") as stdin:
+                stdin.isatty.return_value = True
+                with patch(
+                    "builtins.input",
+                    side_effect=["10", "", "", "", "", "", "7"],
+                ) as mocked_input:
+                    with redirect_stdout(output):
+                        main(Path(directory) / "tickets.json")
+
+        self.assertIn("No matching tickets found.", output.getvalue())
         mocked_input.assert_any_call("Press Enter to return to the menu...")
         self.assertIn("CampusFlow closed.", output.getvalue())
 
