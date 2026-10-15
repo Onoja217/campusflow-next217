@@ -1,6 +1,7 @@
 """Interactive CLI entry point for CampusFlow ticket creation and views."""
 from __future__ import annotations
 
+from copy import deepcopy
 from os import PathLike
 import sys
 
@@ -12,14 +13,17 @@ from .persistence import (
 )
 from .priority_queue import prioritized_tickets
 from .reports import build_ticket_report
+from .search import search_tickets
 from .tickets import (
     Ticket,
     TicketValidationError,
+    add_follow_up_note,
     assign_ticket,
     change_ticket_status,
     create_ticket,
     format_ticket_details,
     format_ticket_list,
+    get_follow_up_notes,
     get_ticket_by_id,
     parse_affected_users_input,
     reopen_ticket,
@@ -27,7 +31,9 @@ from .tickets import (
 
 
 def _save_or_rollback(
-    tickets: list[Ticket], previous: list[Ticket], path: str | PathLike[str]
+    tickets: list[Ticket],
+    previous: list[Ticket],
+    path: str | PathLike[str],
 ) -> bool:
     """Persist a mutation or restore the in-memory collection on failure."""
     try:
@@ -40,10 +46,12 @@ def _save_or_rollback(
 
 
 def prompt_for_ticket(
-    tickets: list[Ticket], tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH
+    tickets: list[Ticket],
+    tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH,
 ) -> Ticket | None:
     """Prompt for a ticket and report success only after it has been saved."""
-    previous = list(tickets)
+    previous = deepcopy(tickets)
+
     try:
         title = input("Ticket title: ")
         category = input("Category (Network/Hardware/Software/Other): ")
@@ -87,22 +95,61 @@ def show_priority_queue(tickets: list[Ticket]) -> None:
 
 
 def show_ticket_report(tickets: list[Ticket]) -> None:
-    """Print workload totals by status and priority."""
+    """Print workload totals by category, status, priority, and resolution."""
     report = build_ticket_report(tickets)
     print(f"Total tickets: {report['total']}")
+    print(f"Resolution percentage: {report['resolution_percentage']:.1f}%")
+
+    print("\nBy category:")
+    for category, count in report["by_category"].items():
+        print(f"  {category}: {count}")
+
     print("\nBy status:")
     for status, count in report["by_status"].items():
         print(f"  {status}: {count}")
+
     print("\nBy priority:")
     for priority, count in report["by_priority"].items():
         print(f"  {priority}: {count}")
 
 
+def show_ticket_search(tickets: list[Ticket]) -> None:
+    """Prompt for optional search terms and filters, then print matches."""
+    try:
+        title = input("Title contains (leave blank for any): ")
+        category = input(
+            "Category (Network/Hardware/Software/Other, blank for any): "
+        )
+        status = input(
+            "Status (open/in_progress/resolved, blank for any): "
+        )
+        priority = input(
+            "Priority (low/medium/high/critical, blank for any): "
+        )
+        matches = search_tickets(
+            tickets,
+            title=title,
+            category=category,
+            status=status,
+            priority=priority,
+        )
+    except TicketValidationError as error:
+        print(f"Error: {error}")
+        return
+
+    if not matches:
+        print("No matching tickets found.")
+        return
+
+    print(format_ticket_list(matches))
+
+
 def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
-    """Print one ticket's details or a friendly not-found message."""
+    """Print ticket details or a friendly not-found message."""
     if not tickets:
         print("No tickets found.")
         return
+
     ticket = get_ticket_by_id(tickets, ticket_id)
     if ticket is None:
         requested = ticket_id.strip() if isinstance(ticket_id, str) else ""
@@ -111,7 +158,57 @@ def show_ticket_by_id(tickets: list[Ticket], ticket_id: str) -> None:
         else:
             print("Please enter a ticket ID.")
         return
+
     print(format_ticket_details(ticket))
+
+
+def prompt_for_follow_up_note(
+    tickets: list[Ticket],
+    tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH,
+) -> None:
+    """Add and save a follow-up note to an eligible ticket."""
+    previous = deepcopy(tickets)
+
+    try:
+        ticket_id = input("Ticket ID for the follow-up note: ")
+        content = input("Follow-up note: ")
+
+        note = add_follow_up_note(tickets, ticket_id, content)
+
+    except TicketValidationError as error:
+        print(f"Error: {error}")
+        return
+
+    if not _save_or_rollback(tickets, previous, tickets_path):
+        return
+
+    print(f"Follow-up note {note.id} added to ticket {ticket_id.strip()}.")
+
+
+def prompt_to_view_follow_up_notes(tickets: list[Ticket]) -> None:
+    """Prompt for a ticket ID and display its follow-up notes."""
+    ticket_id = input("Ticket ID to view follow-up notes: ")
+
+    try:
+        notes = get_follow_up_notes(tickets, ticket_id)
+
+    except TicketValidationError as error:
+        print(f"Error: {error}")
+        return
+
+    if not notes:
+        print(f"No follow-up notes found for ticket {ticket_id.strip()}.")
+        return
+
+    print(f"\nFollow-up notes for ticket {ticket_id.strip()}:")
+    for note in notes:
+        print(f"  {note.id}: {note.content}")
+
+
+def _pause_if_interactive() -> None:
+    """Pause after a result only when running in an interactive terminal."""
+    if sys.stdin.isatty():
+        input("Press Enter to return to the menu...")
 
 
 def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
@@ -124,27 +221,38 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
         return
 
     print("CampusFlow ticket tracker")
+
     try:
         while True:
             print(
-                "\n1. Create ticket\n2. List all tickets\n3. View ticket by ID"
-                "\n4. Assign ticket\n5. Change ticket status\n6. Reopen resolved ticket"
-                "\n7. Exit\n8. Show unresolved priority queue"
-                "\n9. Show ticket report"
+                "\n1. Create ticket\n"
+                "2. List all tickets\n"
+                "3. View ticket by ID\n"
+                "4. Assign ticket\n"
+                "5. Change ticket status\n"
+                "6. Reopen resolved ticket\n"
+                "7. Exit\n"
+                "8. Show unresolved priority queue\n"
+                "9. Show ticket report\n"
+                "10. Search and filter tickets\n"
+                "11. Add follow-up note\n"
+                "12. View follow-up notes"
             )
+
             choice = input("Choose an option: ").strip()
+
             if choice == "1":
                 prompt_for_ticket(tickets, tickets_path)
+
             elif choice == "2":
                 show_tickets(tickets)
-                # Keep the list visible in interactive terminals instead of
-                # immediately printing the menu over the result.
-                if sys.stdin.isatty():
-                    input("Press Enter to return to the menu...")
+                _pause_if_interactive()
+
             elif choice == "3":
                 show_ticket_by_id(tickets, input("Ticket ID: "))
+
             elif choice == "4":
-                previous = list(tickets)
+                previous = deepcopy(tickets)
                 try:
                     ticket_id = input("Ticket ID to assign: ")
                     assignee = input("Assignee name: ")
@@ -153,8 +261,9 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                         print(f"Assigned {ticket.id} to {ticket.assigned_to}.")
                 except TicketValidationError as error:
                     print(f"Error: {error}")
+
             elif choice == "5":
-                previous = list(tickets)
+                previous = deepcopy(tickets)
                 try:
                     ticket_id = input("Ticket ID: ")
                     new_status = input("New status (in_progress/resolved): ")
@@ -163,31 +272,46 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                         print(f"{ticket.id} status changed to {ticket.status}.")
                 except TicketValidationError as error:
                     print(f"Error: {error}")
+
             elif choice == "6":
-                previous = list(tickets)
+                previous = deepcopy(tickets)
                 try:
-                    ticket = reopen_ticket(tickets, input("Ticket ID to reopen: "))
+                    ticket_id = input("Ticket ID to reopen: ")
+                    ticket = reopen_ticket(tickets, ticket_id)
                     if _save_or_rollback(tickets, previous, tickets_path):
                         print(f"{ticket.id} reopened and set to open.")
                 except TicketValidationError as error:
                     print(f"Error: {error}")
+
             elif choice == "7":
                 print("CampusFlow closed.")
                 return
+
             elif choice == "8":
                 show_priority_queue(tickets)
-                # Keep the queue visible in interactive terminals until the
-                # user is ready to return to the menu.
-                if sys.stdin.isatty():
-                    input("Press Enter to return to the menu...")
+                _pause_if_interactive()
+
             elif choice == "9":
                 show_ticket_report(tickets)
-                # Keep the report visible in interactive terminals, just like
-                # the ticket list, until the user is ready to return.
-                if sys.stdin.isatty():
-                    input("Press Enter to return to the menu...")
+                _pause_if_interactive()
+
+            elif choice == "10":
+                show_ticket_search(tickets)
+                _pause_if_interactive()
+
+            elif choice == "11":
+                prompt_for_follow_up_note(tickets, tickets_path)
+
+            elif choice == "12":
+                prompt_to_view_follow_up_notes(tickets)
+                _pause_if_interactive()
+
             else:
-                print("Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, 8, or 9.")
+                print(
+                    "Invalid option. Choose 1, 2, 3, 4, 5, 6, 7, "
+                    "8, 9, 10, 11, or 12."
+                )
+
     except (EOFError, KeyboardInterrupt):
         print("\nCampusFlow closed.")
 

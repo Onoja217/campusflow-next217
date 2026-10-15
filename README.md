@@ -2,12 +2,12 @@
 
 CampusFlow is a Python helpdesk ticket tracker with an interactive command-line interface (CLI) and a local browser dashboard. It supports validated ticket creation, automatic priority calculation, assignment, status changes, an unresolved-ticket priority queue, workload reports by status and priority, and JSON persistence.
 
-## Current development status (14 October 2026)
+## Current development status (15 October 2026)
 
 - **Issue #47 — reliability and follow-up notes:** merged through [PR #51](https://github.com/Onoja217/campusflow-next217/pull/51). The shared note API supports validated notes on open/in-progress tickets, sequential note IDs, JSON persistence, and retaining notes through resolve/reopen. Legacy ticket records without a `notes` field remain supported.
-- **Verification:** GitHub Actions run [#139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338) passed **100 tests** on integrated `main` commit [`7d42c129ad9710592651d85e6bcae024df4639d7`](https://github.com/Onoja217/campusflow-next217/commit/7d42c129ad9710592651d85e6bcae024df4639d7). The latest local run reported by the project owner also passed 100 tests using `python3 -m unittest discover -s tests -v </dev/null`.
-- **Issue #48 — search, filters, reports, and CLI note integration:** in progress in [draft PR #50](https://github.com/Onoja217/campusflow-next217/pull/50), owned by Engineer B (Oabah1). The draft covers case-insensitive title search, AND-combined category/status/priority filters, expanded report counts, and safe resolution percentages. Follow-up-note CLI actions remain pending; they must call Issue #47's shared API. These draft changes are **not yet part of `main`**.
-- **Next integration gate:** finish PR #50, verify note CLI integration, obtain peer review, and confirm all required CI checks pass before merging.
+- **Verification:** GitHub Actions run [#139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338) passed **100 tests** on integrated `main` commit [`7d42c129ad9710592651d85e6bcae024df4639d7`](https://github.com/Onoja217/campusflow-next217/commit/7d42c129ad9710592651d85e6bcae024df4639d7). The latest local run reported by the project owner passed 114 tests using `python3 -m unittest discover -s tests -v`.
+- **Issue #48 — search, filters, reports, and CLI note integration:** in progress in [PR #50](https://github.com/Onoja217/campusflow-next217/pull/50), owned by Engineer B (Oabah1). The PR covers case-insensitive title search, AND-combined category/status/priority filters, expanded report counts, and safe resolution percentages. Follow-up-note CLI actions are implemented as menu option 11 (add) and menu option 12 (view), using Issue #47's shared API and covered by CLI tests. These changes are **not yet part of `main`**.
+- **Next integration gate:** review the completed CLI note integration, obtain peer review, and confirm all required CI checks pass before merging PR #50.
 
 ## Features
 
@@ -15,12 +15,13 @@ CampusFlow is a Python helpdesk ticket tracker with an interactive command-line 
 - **Calculate priority:** assign `critical`, `high`, `medium`, or `low` automatically.
 - **Generate ticket IDs:** use sequential IDs such as `T001`, `T002`, and so on.
 - **Find tickets:** list all tickets or view one ticket by ID.
+- **Search and filter tickets:** search titles without case sensitivity and combine category, status, and priority filters.
 - **Assign tickets:** record the person responsible for an unresolved ticket.
 - **Manage status:** follow the `open → in_progress → resolved` workflow, with an explicit action to reopen resolved tickets.
 - **Review the priority queue:** order unresolved tickets by priority; resolved tickets are excluded.
 - **View workload reports:** show totals by status and priority, including categories with zero tickets.
 - **Save work:** persist tickets in JSON so they remain available after restart.
-- **Record follow-up notes:** add and retrieve validated notes through the shared ticket API; notes persist in JSON and remain attached when a ticket is resolved and reopened.
+- **Record follow-up notes:** use CLI menu options 11 and 12 to add and retrieve validated notes through the shared ticket API; notes persist in JSON and remain attached when a ticket is resolved and reopened.
 - **Use either interface:** the CLI and browser dashboard share the same ticket rules and default JSON file.
 
 ## Requirements
@@ -64,6 +65,9 @@ python3 -m campusflow.cli
 | 7 | Exit |
 | 8 | Show unresolved priority queue |
 | 9 | Show ticket report |
+| 10 | Search tickets and combine filters |
+| 11 | Add a follow-up note to an eligible ticket |
+| 12 | View follow-up notes for a ticket |
 
 ## Run the browser dashboard
 
@@ -121,7 +125,7 @@ The default data file is `<project-root>/data/tickets.json`. Its path is anchore
 
 **To reset local ticket data safely:** stop the CLI/dashboard first, make a backup of `data/tickets.json` if you may need the records, and then delete or move that file. The next run starts with an empty collection and creates the file again when a ticket is saved. Do not delete this file if it contains records you need to keep. Automated persistence tests should use temporary directories and must not reset the real data file.
 
-Each ticket record contains `id`, `title`, `category`, `urgency`, `affected_users`, `priority`, `status`, and `assigned_to`. Tickets without an assignee are shown as **Unassigned**.
+Each ticket record contains `id`, `title`, `category`, `urgency`, `affected_users`, `priority`, `status`, and `assigned_to`. The optional `notes` array stores follow-up notes; older valid records without this field remain supported. Tickets without an assignee are shown as **Unassigned**.
 
 ## Run the full test suite
 
@@ -131,22 +135,21 @@ From the repository root:
 python3 -m unittest discover -s tests -v
 ```
 
-The tests use Python's standard-library `unittest` framework. They cover ticket validation and priority boundaries, ticket status transitions, CLI behavior, priority ordering, JSON persistence and recovery, and reports. Check the GitHub Actions result for the specific pull request/commit before merging.
+The tests use Python's standard-library `unittest` framework. They cover ticket validation and priority boundaries, status transitions, assignment, CLI behavior, priority ordering, search and combined filters, report calculations, follow-up-note validation and persistence, JSON recovery, and browser/API smoke tests. Run the full suite before submitting changes and check the GitHub Actions result for the specific pull request/commit before merging.
 
 ## Team and contributions
 
-The display names, roles, and contribution summaries below have been explicitly confirmed by both fellows in [Issue #26](https://github.com/Onoja217/campusflow217/issues/26) on 2026-10-11. The contribution summaries are grounded in the merged pull-request history.
+The table below reflects the current CampusFlow Next collaboration.
 
-| Fellow | GitHub handle | Proposed role | Contribution summary and evidence |
+| Role | Fellow | GitHub | Contributions |
 | --- | --- | --- | --- |
-| Jireh Ochygole Samuel | [@Jireh7521](https://github.com/Jireh7521) | Feature contributor | Implemented safe status transitions, the unresolved-ticket priority queue, and workload reports; related merged PRs: [#11](https://github.com/Onoja217/campusflow217/pull/11), [#15](https://github.com/Onoja217/campusflow217/pull/15), [#21](https://github.com/Onoja217/campusflow217/pull/21). |
-| Onoja Monday Ojonugba | [@Onoja217](https://github.com/Onoja217) | Feature contributor / repository owner | Contributed validated ticket creation and priority calculation, ticket listing/details, persistence, and the browser dashboard; related merged PRs: [#8](https://github.com/Onoja217/campusflow217/pull/8), [#9](https://github.com/Onoja217/campusflow217/pull/9), [#14](https://github.com/Onoja217/campusflow217/pull/14), [#19](https://github.com/Onoja217/campusflow217/pull/19). |
+| Engineer A | Onoja Ojonugba | [@Onoja217](https://github.com/Onoja217) | Repository owner and core application work, including ticket creation and validation, assignment and status workflow, JSON persistence, the browser dashboard, and the shared follow-up-note API in [PR #51](https://github.com/Onoja217/campusflow-next217/pull/51). |
+| Engineer B | Okoh Abah | [@Oabah1](https://github.com/Oabah1) | Search and combined filters, report analytics, CLI search menu integration, and related regression tests in [PR #50](https://github.com/Onoja217/campusflow-next217/pull/50). |
 
-### Review evidence
+### Relevant pull requests
 
-- [Issue #25 — peer review and merge evidence audit](https://github.com/Onoja217/campusflow217/issues/25) records the review evidence and historical gaps found in the merged PRs.
-- [PR #15](https://github.com/Onoja217/campusflow217/pull/15) contains substantive partner feedback on queue ordering, tie-breaking, resolved-ticket exclusion, input mutation, persistence, and tests.
-- Some merged PRs have approvals with empty review text. Those are listed as approval records, not represented as substantive written feedback. The review history is not backdated or reconstructed.
+- [PR #51 — Follow-up-note API and persistence](https://github.com/Onoja217/campusflow-next217/pull/51): provides the shared API for validating, storing, and retrieving follow-up notes.
+- [PR #50 — Search, filters, and report analytics](https://github.com/Onoja217/campusflow-next217/pull/50): contains Engineer B's search, reporting, and CLI integration work. The pull request remains under review; follow-up-note CLI actions are implemented through menu options 11 and 12 and covered by CLI tests.
 
 ## Known limitations and future improvements
 
@@ -161,19 +164,27 @@ The display names, roles, and contribution summaries below have been explicitly 
 
 ```text
 campusflow/
-  cli.py                # Interactive CLI and menu actions
-  web.py                # Local browser dashboard and HTTP server
-  tickets.py            # Ticket model, validation, IDs, workflow, formatting
-  persistence.py        # JSON load/save and record validation
-  priority_queue.py     # Unresolved-ticket filtering and priority ordering
-  reports.py            # Workload report aggregation
+  cli.py
+  persistence.py
+  priority_queue.py
+  reports.py
+  search.py
+  tickets.py
+  web.py
 tests/
   test_cli.py
+  test_cli_persistence_smoke.py
+  test_follow_up_notes.py
   test_persistence.py
   test_priority_queue.py
+  test_priority_queue_cli.py
   test_reports.py
+  test_search.py
+  test_ticket_assignment.py
   test_ticket_status.py
+  test_ticket_views.py
   test_tickets.py
+  test_web.py
 ```
 
 GitHub Actions runs the automated test suite for supported pull-request and push events. Verify the status of the exact commit under review before merging.
