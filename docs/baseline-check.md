@@ -120,7 +120,7 @@ Issue #47 was merged through [PR #51](https://github.com/Onoja217/campusflow-nex
 **Issue:** [#48 — ticket search, combined filters, reports, and follow-up-note CLI](https://github.com/Onoja217/campusflow-next217/issues/48)  
 **Main commit used as the PR base:** [`8165e01b0d9378da52870bb8ec6915b24717a3ba`](https://github.com/Onoja217/campusflow-next217/commit/8165e01b0d9378da52870bb8ec6915b24717a3ba).
 
-This record was added during the acceptance audit, after implementation had started; it is not represented as a pre-coding inspection. The branch comparison confirms that the PR is based on this main commit and is 15 commits ahead with no commits behind at the time of this check.
+This record was added during the acceptance audit, after implementation had started; it is not represented as a pre-coding inspection. The branch comparison confirms that the PR is based on this main commit and is 20 commits ahead with no commits behind at the time of this check.
 
 ### Baseline test evidence
 
@@ -132,4 +132,5 @@ The repository README records a successful full-suite run of **100 tests** on in
 - The feature implementation and CLI note flow are present on the PR branch, but the PR still requires peer approval and review of the final integrated changes.
 - Search tests already cover title matching, category filtering, combined AND filters, invalid inputs, no matches, and non-mutation. Independent status and priority filter tests were added during this audit to make the individual-filter requirement explicit.
 - The README CLI menu table previously stopped at option 10 despite the implementation exposing options 11 and 12; the documentation has been updated in this branch.
+- A failed note-save regression test was added during this audit. The CLI now snapshots ticket state deeply before mutations so a persistence failure does not leave an unsaved note in memory.
 - The final integration gate remains a successful full test run on the final PR head plus peer review before merge.
