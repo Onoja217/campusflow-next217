@@ -66,6 +66,8 @@ python3 -m campusflow.cli
 | 8 | Show unresolved priority queue |
 | 9 | Show ticket report |
 | 10 | Search tickets and combine filters |
+| 11 | Add a follow-up note to an eligible ticket |
+| 12 | View follow-up notes for a ticket |
 
 ## Run the browser dashboard
 
