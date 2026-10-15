@@ -111,3 +111,25 @@ Issue #47 was merged through [PR #51](https://github.com/Onoja217/campusflow-nex
 - [x] The shared note API contract was agreed in the PR discussion for Issue #48 integration.
 
 **Final verification decision (2026-10-14):** The integrated-main CI gate is satisfied. The full suite passed on the current `main` SHA, and the reviewer-requested malformed-note cases plus fresh-process ID continuity test are included in that run. Local execution was not performed in the connected audit environment; the evidence here is GitHub Actions CI.
+
+
+## Issue #48 baseline record — retrospective
+
+**Audit date:** 2026-10-15  
+**Feature branch:** `feature/issue-48-search-reports`  
+**Issue:** [#48 — ticket search, combined filters, reports, and follow-up-note CLI](https://github.com/Onoja217/campusflow-next217/issues/48)  
+**Main commit used as the PR base:** [`8165e01b0d9378da52870bb8ec6915b24717a3ba`](https://github.com/Onoja217/campusflow-next217/commit/8165e01b0d9378da52870bb8ec6915b24717a3ba).
+
+This record was added during the acceptance audit, after implementation had started; it is not represented as a pre-coding inspection. The branch comparison confirms that the PR is based on this main commit and is 15 commits ahead with no commits behind at the time of this check.
+
+### Baseline test evidence
+
+The repository README records a successful full-suite run of **100 tests** on integrated main commit [`7d42c129ad9710592651d85e6bcae024df4639d7`](https://github.com/Onoja217/campusflow-next217/commit/7d42c129ad9710592651d85e6bcae024df4639d7), with workflow run [#139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338). That is the latest documented pre-Issue-48 baseline evidence available in this audit. A separate run on the exact PR base commit `8165e01b0d9378da52870bb8ec6915b24717a3ba` was not verified, so the 100-test result should not be misattributed to that exact SHA.
+
+### Known limitations / acceptance gaps found in review
+
+- The initial Issue #48 baseline inspection was not recorded before coding; this section documents the gap transparently after the fact.
+- The feature implementation and CLI note flow are present on the PR branch, but the PR still requires peer approval and review of the final integrated changes.
+- Search tests already cover title matching, category filtering, combined AND filters, invalid inputs, no matches, and non-mutation. Independent status and priority filter tests were added during this audit to make the individual-filter requirement explicit.
+- The README CLI menu table previously stopped at option 10 despite the implementation exposing options 11 and 12; the documentation has been updated in this branch.
+- The final integration gate remains a successful full test run on the final PR head plus peer review before merge.
