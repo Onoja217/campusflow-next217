@@ -120,7 +120,7 @@ Issue #47 was merged through [PR #51](https://github.com/Onoja217/campusflow-nex
 **Issue:** [#48 — ticket search, combined filters, reports, and follow-up-note CLI](https://github.com/Onoja217/campusflow-next217/issues/48)  
 **Main commit used as the PR base:** [`8165e01b0d9378da52870bb8ec6915b24717a3ba`](https://github.com/Onoja217/campusflow-next217/commit/8165e01b0d9378da52870bb8ec6915b24717a3ba).
 
-This record was added during the acceptance audit, after implementation had started; it is not represented as a pre-coding inspection. The branch comparison confirms that the PR is based on this main commit and is 22 commits ahead with no commits behind at the time of this check.
+This record was added during the acceptance audit, after implementation had started; it is not represented as a pre-coding inspection. The branch comparison confirmed that the PR was based on this main commit and had no commits behind `main` at the time of the initial audit.
 
 ### Baseline test evidence
 
