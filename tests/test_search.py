@@ -39,6 +39,14 @@ class TicketSearchTests(unittest.TestCase):
         results = search_tickets(self.tickets, category="network")
         self.assertEqual([ticket.id for ticket in results], ["T001", "T003"])
 
+    def test_status_filter_works_independently(self):
+        results = search_tickets(self.tickets, status="IN_PROGRESS")
+        self.assertEqual([ticket.id for ticket in results], ["T002"])
+
+    def test_priority_filter_works_independently(self):
+        results = search_tickets(self.tickets, priority="CRITICAL")
+        self.assertEqual([ticket.id for ticket in results], ["T004"])
+
     def test_filters_are_combined_with_and(self):
         results = search_tickets(
             self.tickets,
