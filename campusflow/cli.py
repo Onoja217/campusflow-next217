@@ -1,6 +1,7 @@
 """Interactive CLI entry point for CampusFlow ticket creation and views."""
 from __future__ import annotations
 
+from copy import deepcopy
 from os import PathLike
 import sys
 
@@ -49,7 +50,7 @@ def prompt_for_ticket(
     tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH,
 ) -> Ticket | None:
     """Prompt for a ticket and report success only after it has been saved."""
-    previous = list(tickets)
+    previous = deepcopy(tickets)
 
     try:
         title = input("Ticket title: ")
@@ -166,7 +167,7 @@ def prompt_for_follow_up_note(
     tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH,
 ) -> None:
     """Add and save a follow-up note to an eligible ticket."""
-    previous = list(tickets)
+    previous = deepcopy(tickets)
 
     try:
         ticket_id = input("Ticket ID for the follow-up note: ")
@@ -251,7 +252,7 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                 show_ticket_by_id(tickets, input("Ticket ID: "))
 
             elif choice == "4":
-                previous = list(tickets)
+                previous = deepcopy(tickets)
                 try:
                     ticket_id = input("Ticket ID to assign: ")
                     assignee = input("Assignee name: ")
@@ -262,7 +263,7 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                     print(f"Error: {error}")
 
             elif choice == "5":
-                previous = list(tickets)
+                previous = deepcopy(tickets)
                 try:
                     ticket_id = input("Ticket ID: ")
                     new_status = input("New status (in_progress/resolved): ")
@@ -273,7 +274,7 @@ def main(tickets_path: str | PathLike[str] = DEFAULT_TICKETS_PATH) -> None:
                     print(f"Error: {error}")
 
             elif choice == "6":
-                previous = list(tickets)
+                previous = deepcopy(tickets)
                 try:
                     ticket_id = input("Ticket ID to reopen: ")
                     ticket = reopen_ticket(tickets, ticket_id)
