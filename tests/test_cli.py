@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from campusflow.cli import main
+from campusflow.persistence import TicketPersistenceError
 
 
 class InteractiveCliTests(unittest.TestCase):
@@ -202,6 +203,25 @@ class InteractiveCliTests(unittest.TestCase):
             "N001: Router restarted; monitoring connection.",
             output,
         )
+
+    def test_failed_note_save_rolls_back_in_memory_note(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tickets.json"
+
+            with patch(
+                "campusflow.cli.save_tickets",
+                side_effect=[None, TicketPersistenceError("disk full")],
+            ):
+                output = self.run_cli([
+                    "1", "Wi-Fi unavailable", "Network", "high", "10",
+                    "11", "T001", "This note should be rolled back.",
+                    "12", "T001",
+                    "7",
+                ], path)
+
+        self.assertIn("Persistence error: disk full", output)
+        self.assertIn("No follow-up notes found for ticket T001.", output)
+        self.assertNotIn("N001: This note should be rolled back.", output)
 
     def test_follow_up_note_persists_between_cli_runs(self):
         with tempfile.TemporaryDirectory() as directory:
