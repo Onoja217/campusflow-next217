@@ -77,29 +77,37 @@ This is a proposal for the two engineers to confirm, not a claim that the API al
 - A rejected operation returns the project's agreed error result or raises its agreed exception, leaves ticket data unchanged, and does not advance the note-ID counter.
 - Loading validates the full document before replacing the active in-memory records. A failed load leaves the old records and ID counters intact.
 
-## Baseline acceptance and next actions
+## Baseline acceptance — historical record
 
-- [x] Confirm the baseline commit and inspect relevant ticket, persistence, and test files.
-- [x] Record the successful full-suite result captured in the baseline audit: 86 tests passed in the reported GitHub Actions run.
-- [x] Record existing safeguards and gaps before implementation.
-- [ ] Agree the note schema/API, ID allocation behavior, and error conventions with the Issue #48 engineer.
-- [ ] Implement Issue #47 on its own focused branch, adding regression tests before changing behavior.
-- [ ] Run the full suite on the PR and require peer review before merging.
-- [ ] After merge, rerun the suite on integrated `main` and record the resulting commit and CI run.
+At the original baseline commit, the existing suite was recorded as green: 86 tests passed in the GitHub Actions run documented above. That was baseline evidence, not a local test run during this audit.
 
-**Baseline decision:** The existing test suite was recorded as green at the baseline commit. Proceed with Issue #47 as an additive, test-led change; do not rewrite the application or weaken existing persistence guarantees.
+## Issue #47 implementation and post-merge verification
 
+Issue #47 was merged through [PR #51](https://github.com/Onoja217/campusflow-next217/pull/51) on 2026-10-14.
 
-## Issue #47 implementation and shared API update
+- **Integrated main commit:** [36dac2c891d7b620bc408d5403f421f3fe55f4ba](https://github.com/Onoja217/campusflow-next217/commit/36dac2c891d7b620bc408d5403f421f3fe55f4ba)
+- **Implementation commit tested by PR CI:** [7abd6f87bafff59568efb5ff9929ee0aeea34577](https://github.com/Onoja217/campusflow-next217/commit/7abd6f87bafff59568efb5ff9929ee0aeea34577)
+- **Test command:** `python -m unittest discover -s tests -v` (the workflow uses this command; Issue #47's requested local command is `python3 -m unittest discover -s tests -v`).
+- **CI evidence:** [Python tests run #130](https://github.com/Onoja217/campusflow-next217/actions/runs/38583580118) completed successfully. The job log reports **99 tests ran in 5.729 seconds**.
+- **Local execution:** Not performed in the connected audit environment; GitHub CI evidence is not represented as a local run.
 
-The Issue #47 / Issue #48 engineers agreed on the shared contract: immutable `FollowUpNote(id, content)`; `add_follow_up_note(...)` returns the created note or raises `TicketValidationError`; `get_follow_up_notes(...)` returns notes in creation order; IDs are globally sequential and persisted in each ticket's `notes` array; legacy records without `notes` remain valid; and notes can be added only to `open` or `in_progress` tickets.
+### Scope implemented
 
-Peer review identified malformed collection handling in the read API and validation of existing notes before a mutable-mapping write. Regression tests and implementation hardening have been added on the Issue #47 branch. The PR remains a draft pending fresh CI, follow-up review, and confirmation that the merge conflict is resolved.
+- Immutable `FollowUpNote(id, content)` records and shared add/read functions.
+- Sequential note IDs, validated note content, and note creation only for open/in-progress tickets.
+- Notes retained when tickets are resolved and reopened.
+- JSON note persistence with legacy records that omit `notes` remaining valid.
+- Validation of ticket/note records and duplicate ticket/note IDs before a loaded collection is returned.
+- Regression tests for note lifecycle, rejection without mutation, malformed notes, persistence, and ID continuity.
 
-## Implementation verification status
+### Remaining verification gate
 
-- [x] Add the shared note model and API.
-- [x] Add regression tests for malformed collections/entries, non-mutation, and note-ID continuity after rejection.
-- [ ] Verify a fresh CI run on the updated head.
-- [ ] Confirm GitHub reports the PR as mergeable.
-- [ ] Obtain follow-up peer review and rerun tests after integration.
+- [x] Issue #47 changes merged into `main`.
+- [x] The PR's required CI run passed with 99 tests.
+- [x] The full suite also passed on PR #52's GitHub Actions merge candidate, based on the integrated `main` merge commit: [Python tests run #135](https://github.com/Onoja217/campusflow-next217/actions/runs/38588191314), **99 tests ran in 5.710 seconds**. This verifies the `main` base combined with the documentation branch, not a standalone push-triggered run on the exact `main` SHA.
+- [x] Confirm a successful full-suite run triggered directly against integrated `main`: [Python tests run #139](https://github.com/Onoja217/campusflow-next217/actions/runs/38589183338) ran on current `main` commit `7d42c129ad9710592651d85e6bcae024df4639d7` and passed **100 tests in 5.784 seconds**.
+- [x] Confirm the fresh-process note-ID regression test and reviewer-requested malformed-note cases pass in the integrated-main run.
+- [x] Engineer B (Oabah1) reviewed the implementation, requested specific malformed-note validation tests, and later approved PR #51 after the follow-up fixes were included.
+- [x] The shared note API contract was agreed in the PR discussion for Issue #48 integration.
+
+**Final verification decision (2026-10-14):** The integrated-main CI gate is satisfied. The full suite passed on the current `main` SHA, and the reviewer-requested malformed-note cases plus fresh-process ID continuity test are included in that run. Local execution was not performed in the connected audit environment; the evidence here is GitHub Actions CI.

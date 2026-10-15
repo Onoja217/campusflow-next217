@@ -1,5 +1,7 @@
 """Regression tests for ticket follow-up notes and safe persistence."""
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from dataclasses import replace
@@ -77,6 +79,39 @@ class FollowUpNoteTests(unittest.TestCase):
             save_tickets(restored, path)
             reloaded = load_tickets(path)
             self.assertEqual([n.id for n in get_follow_up_notes(reloaded, self.ticket.id)], ["N001", "N002"])
+
+    def test_note_id_continues_after_fresh_process_restart(self):
+        add_follow_up_note(self.tickets, self.ticket.id, "First process note")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tickets.json"
+            save_tickets(self.tickets, path)
+
+            script = """
+import sys
+from pathlib import Path
+from campusflow.persistence import load_tickets, save_tickets
+from campusflow.tickets import add_follow_up_note
+
+path = Path(sys.argv[1])
+tickets = load_tickets(path)
+note = add_follow_up_note(tickets, "T001", "Added after process restart")
+save_tickets(tickets, path)
+print(note.id)
+"""
+            result = subprocess.run(
+                [sys.executable, "-c", script, str(path)],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.stdout.strip(), "N002")
+            restarted_tickets = load_tickets(path)
+            self.assertEqual(
+                [note.id for note in get_follow_up_notes(restarted_tickets, self.ticket.id)],
+                ["N001", "N002"],
+            )
 
     def test_legacy_ticket_document_without_notes_remains_compatible(self):
         with tempfile.TemporaryDirectory() as directory:
